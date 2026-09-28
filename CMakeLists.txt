@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 project(playlist-manager LANGUAGES CXX)
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
+find_package(TagLib REQUIRED)
 
 qt_standard_project_setup()
 
@@ -17,6 +18,7 @@ target_link_libraries(playlist-manager
     PRIVATE
         Qt::Core
         Qt::Widgets
+        TagLib::tag
 )
 
 install(TARGETS playlist-manager
