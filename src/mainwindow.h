@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,11 +19,12 @@ public:
     ~MainWindow() override;
 
 private slots:
-    void on_actionAbout_Qt_triggered();
-
-    void on_actionOpen_triggered();
+    void open_about_qt();
+    void open_playlist_file_selector();
+    void open_music_dir_selector();
 
 private:
     Ui::MainWindow *ui;
+    QStandardItemModel* model;
 };
 #endif // MAINWINDOW_H
