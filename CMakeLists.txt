@@ -12,6 +12,8 @@ qt_add_executable(playlist-manager
     src/mainwindow.cpp
     src/mainwindow.h
     src/mainwindow.ui
+    src/tag.h
+    src/tag.cpp
 )
 
 target_link_libraries(playlist-manager

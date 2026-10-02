@@ -66,7 +66,6 @@ void MainWindow::open_music_dir_selector()
     // TODO: Extract relevant data using TagLib to populate other columns
     for(const auto& f : dir)
     {
-        qDebug() << f.fileName();
         QStandardItem* item = new QStandardItem(f.fileName());
         model->appendRow(item);
     }
