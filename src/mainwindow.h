@@ -26,5 +26,10 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QStandardItemModel* model;
+    const QStringList   VALID_FILETYPES{
+        "*.mp3", "*.mp2", "*.ogg",  "*.oga",  "*.opus", "*.flac", "*.m4a",
+        "*.mp4", "*.aac", "*.wav",  "*.wave", "*.wv",   "*.mpc",  "*.ape",
+        "*.wma", "*.aif", "*.aiff", "*.dsf",  "*.dff",  "*.sacd",
+    };
 };
 #endif // MAINWINDOW_H
