@@ -3,7 +3,16 @@
 #include <QPixmap>
 #include <QStandardItem>
 #include <QString>
+#include <chrono>
+#include <format>
 #include <taglib/fileref.h>
+
+// Helper to convert seconds to min:sec format
+QString format_duration_seconds(const int sec)
+{
+    std::chrono::seconds duration(sec);
+    return QString(std::format("{:%H:%M:%S}", duration).c_str());
+}
 
 // NOTE: Ensure a model takes ownership of returned item
 // to handle it's memory
@@ -14,12 +23,17 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
         return QList<QStandardItem*>();
     // Hold album art, title, artist, album, length, track number
     QList<QStandardItem*> row(6);
-    // TODO: Start adding to it
-    // row[0] = get_image_data(f);
+    row[0] = new QStandardItem(QIcon(get_image_data(f)), "");
+    row[0]->setSizeHint(QSize(64, 64));
+    row[1] = new QStandardItem(QString(f.tag()->title().toCString(true)));
+    row[2] = new QStandardItem(QString(f.tag()->artist().toCString(true)));
+    row[3] = new QStandardItem(QString(f.tag()->album().toCString(true)));
+    row[4] = new QStandardItem(format_duration_seconds(f.audioProperties()->lengthInSeconds()));
+    row[5] = new QStandardItem(QString(std::to_string((f.tag()->track())).c_str()));
     return row;
 }
 
-QPixmap get_image_data(const TagLib::FileRef f)
+QPixmap get_image_data(const TagLib::FileRef& f)
 {
     TagLib::List<TagLib::VariantMap> pictures = f.complexProperties("PICTURE");
     TagLib::VariantMap               cover_pic;

@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "tag.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
 #include <QDirListing>
@@ -6,7 +7,7 @@
 #include <QStandardItemModel>
 #include <QTableView>
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
@@ -33,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     //     }
     // }
 
+    ui->songViewer->setIconSize(QSize(32, 32));
     ui->songViewer->setModel(model);
 }
 
@@ -55,18 +57,17 @@ void MainWindow::open_playlist_file_selector()
 
 void MainWindow::open_music_dir_selector()
 {
-    QString dirpath = QFileDialog::getExistingDirectory(this, "Open Directory", "");
-    qDebug() << dirpath;
+    QString dirpath = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home/Music");
     QDirListing dir(dirpath, VALID_FILETYPES, QDirListing::IteratorFlag::FilesOnly);
 
     // Reset model data prior to filling out
     if(model->rowCount() > 0)
         model->removeRows(0, model->rowCount());
 
-    // TODO: Extract relevant data using TagLib to populate other columns
+    // Extract song metadata using TagLib before appending to table
     for(const auto& f : dir)
     {
-        QStandardItem* item = new QStandardItem(f.fileName());
-        model->appendRow(item);
+        auto items = song_to_item(f.absoluteFilePath());
+        model->appendRow(items);
     }
 }

@@ -13,6 +13,6 @@ QList<QStandardItem*> song_to_item(const QString& filepath);
 // using TagLib library
 // Expects `filepath` to be a valid filepath
 // Returns empty QPixmap if null FileRef or no front cover image embedded
-QPixmap get_image_data(const QString& filepath);
+QPixmap get_image_data(const TagLib::FileRef& f);
 
 #endif // TAG_H
