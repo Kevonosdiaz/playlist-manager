@@ -4,8 +4,11 @@
 #include <QDebug>
 #include <QDirListing>
 #include <QFileDialog>
+#include <QFileSystemModel>
 #include <QStandardItemModel>
+#include <QStandardPaths>
 #include <QTableView>
+#include <QTreeView>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -21,21 +24,33 @@ MainWindow::MainWindow(QWidget* parent)
         ui->actionOpenDirectory, &QAction::triggered, this, &MainWindow::open_music_dir_selector);
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
 
+    // Initialize song viewer QTableView headers
     model = new QStandardItemModel(0, 6);
     model->setHorizontalHeaderLabels(
         {"Album Art", "Title", "Artist", "Album", "Length", "Track Number"});
-    // for(int row = 0; row < model->rowCount(); ++row)
-    // {
-    //     for(int column = 0; column < model->columnCount(); ++column)
-    //     {
-    //         QStandardItem* item
-    //             = new QStandardItem(QString("row %0, column %1").arg(row).arg(column));
-    //         model->setItem(row, column, item);
-    //     }
-    // }
 
     ui->songViewer->setIconSize(QSize(32, 32));
     ui->songViewer->setModel(model);
+
+    // Initialize file explorer to music directory if it exists, otherwise home
+    QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+    qDebug() << default_dir;
+    if(!default_dir.exists())
+    {
+        default_dir = QDir::homePath();
+    }
+    qDebug() << default_dir;
+    auto* filesystem_model = new QFileSystemModel(ui->fileExplorer);
+    filesystem_model->setRootPath(default_dir.absolutePath());
+    filesystem_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden);
+    ui->fileExplorer->setModel(filesystem_model);
+    ui->fileExplorer->setRootIndex(filesystem_model->index(default_dir.absolutePath()));
+
+    // Hide header and hide all columns except filename column
+    ui->fileExplorer->setHeaderHidden(true);
+    ui->fileExplorer->setColumnHidden(1, true);
+    ui->fileExplorer->setColumnHidden(2, true);
+    ui->fileExplorer->setColumnHidden(3, true);
 }
 
 MainWindow::~MainWindow()
