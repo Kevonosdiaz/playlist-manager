@@ -26,8 +26,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     // Initialize song viewer QTableView headers
     model = new QStandardItemModel(0, 6);
-    model->setHorizontalHeaderLabels(
-        {"Album Art", "Title", "Artist", "Album", "Length", "Track Number"});
+    model->setHorizontalHeaderLabels({"Album Art", "Title", "Artist", "Album", "Length", "Track"});
 
     ui->songViewer->setIconSize(QSize(32, 32));
     ui->songViewer->setModel(model);
