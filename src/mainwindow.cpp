@@ -75,7 +75,11 @@ void MainWindow::open_playlist_file_selector()
 
 void MainWindow::open_music_dir_selector()
 {
-    QString dirpath = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home/Music");
+    QString dirpath = QFileDialog::getExistingDirectory(
+        this,
+        tr("Open Directory"),
+        QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+
     load_dir_to_songviewer(dirpath);
 }
 
@@ -91,7 +95,11 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     QDirListing dir(dirpath, VALID_FILETYPES, QDirListing::IteratorFlag::FilesOnly);
 
-    // Reset model data prior to filling outQFileSystemModel
+    // Exit if empty
+    if(dir.begin() == dir.end())
+        return;
+
+    // Reset model data prior to filling out QFileSystemModel
     if(song_model->rowCount() > 0)
         song_model->removeRows(0, song_model->rowCount());
 
