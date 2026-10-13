@@ -36,6 +36,7 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
     return row;
 }
 
+// Retrieves embedded album art from file using TagLib
 QPixmap get_image_data(const TagLib::FileRef& f)
 {
     TagLib::List<TagLib::VariantMap> pictures = f.complexProperties("PICTURE");

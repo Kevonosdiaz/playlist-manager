@@ -5,7 +5,13 @@
 int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
-    MainWindow   w;
+
+    // Set higher global font size
+    QFont global_font = QApplication::font();
+    global_font.setPointSize(20);
+    QApplication::setFont(global_font);
+
+    MainWindow w;
     w.show();
     return QApplication::exec();
 }
