@@ -11,11 +11,14 @@
 QString format_duration_seconds(const int sec)
 {
     std::chrono::seconds duration(sec);
-    return QString(std::format("{:%H:%M:%S}", duration).c_str());
+    if(sec >= 3600)
+        return QString(std::format("{:%H:%M:%S}", duration).c_str());
+    return QString(std::format("{:%M:%S}", duration).c_str());
 }
 
 // NOTE: Ensure a model takes ownership of returned item
 // to handle it's memory
+// TODO: Handle missing tags explicitly
 QList<QStandardItem*> song_to_item(const QString& filepath)
 {
     TagLib::FileRef f{filepath.toUtf8().constData()};
