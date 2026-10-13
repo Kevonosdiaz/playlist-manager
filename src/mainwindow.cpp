@@ -10,6 +10,9 @@
 #include <QTableView>
 #include <QTreeView>
 
+#include <QFontMetrics>
+#include <QHeaderView>
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -29,8 +32,14 @@ MainWindow::MainWindow(QWidget* parent)
     song_model->setHorizontalHeaderLabels(
         {"Album Art", "Title", "Artist", "Album", "Length", "Track"});
 
-    ui->songViewer->setIconSize(QSize(32, 32));
+    constexpr int ART_SIZE = 64;
+    ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
     ui->songViewer->setModel(song_model);
+
+    // Fix row height based on album art size
+    ui->songViewer->verticalHeader()->setDefaultSectionSize(ART_SIZE + 8);
+    // Resize columns based on contents
+    ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     // Initialize file explorer to music directory if it exists, otherwise home
     QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
