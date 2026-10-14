@@ -42,10 +42,9 @@ MainWindow::MainWindow(QWidget* parent)
     ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->songViewer->horizontalHeader()->setStretchLastSection(true);
 
-    // Enable sorting by column, default by title
+    // Enable sorting by column
     ui->songViewer->setSortingEnabled(true);
     ui->songViewer->horizontalHeader()->setSortIndicatorShown(true);
-    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
 
     // Initialize file explorer to music directory if it exists, otherwise home
     QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
@@ -121,4 +120,5 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         auto items = song_to_item(f.absoluteFilePath());
         song_model->appendRow(items);
     }
+    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
 }
