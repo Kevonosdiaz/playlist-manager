@@ -18,8 +18,8 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    // Set default splitter ratio for left/right sides
-    ui->mainSplitter->setStretchFactor(1, 3);
+    // Set default splitter sizes for left/right sides
+    ui->mainSplitter->setSizes({400, 784});
 
     connect(
         ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
@@ -28,9 +28,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
 
     // Initialize song viewer QTableView headers
-    song_model = new QStandardItemModel(0, 6);
+    song_model = new QStandardItemModel(0, 7);
     song_model->setHorizontalHeaderLabels(
-        {"Album Art", "Title", "Artist", "Album", "Length", "Track"});
+        {"Album Art", "Title", "Artist", "Album", "Length", "Track", ""});
 
     constexpr int ART_SIZE = 64;
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
@@ -40,15 +40,14 @@ MainWindow::MainWindow(QWidget* parent)
     ui->songViewer->verticalHeader()->setDefaultSectionSize(ART_SIZE + 8);
     // Resize columns based on contents
     ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->songViewer->horizontalHeader()->setStretchLastSection(true);
 
     // Initialize file explorer to music directory if it exists, otherwise home
     QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
-    qDebug() << default_dir;
     if(!default_dir.exists())
     {
         default_dir = QDir::homePath();
     }
-    qDebug() << default_dir;
     fs_model = new QFileSystemModel(ui->fileExplorer);
     fs_model->setRootPath(default_dir.absolutePath());
     fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden);
@@ -79,7 +78,6 @@ void MainWindow::open_playlist_file_selector()
 {
     QString filename = QFileDialog::getOpenFileName(
         this, "Open Playlist File", "", "M3U Media Playlist (*.m3u *.m3u8)");
-    qDebug() << filename;
 }
 
 void MainWindow::open_music_dir_selector()
