@@ -28,11 +28,23 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
     QList<QStandardItem*> row(6);
     row[0] = new QStandardItem(QIcon(get_image_data(f)), "");
     row[0]->setSizeHint(QSize(64, 64));
-    row[1] = new QStandardItem(QString(f.tag()->title().toCString(true)));
-    row[2] = new QStandardItem(QString(f.tag()->artist().toCString(true)));
-    row[3] = new QStandardItem(QString(f.tag()->album().toCString(true)));
-    row[4] = new QStandardItem(format_duration_seconds(f.audioProperties()->lengthInSeconds()));
+    row[1]    = new QStandardItem(QString(f.tag()->title().toCString(true)));
+    row[2]    = new QStandardItem(QString(f.tag()->artist().toCString(true)));
+    row[3]    = new QStandardItem(QString(f.tag()->album().toCString(true)));
+    int sec   = f.audioProperties()->lengthInSeconds();
+    row[4]    = new QStandardItem(format_duration_seconds(sec));
+    int track = f.tag()->track();
+    // row[5]    = new QStandardItem(QString::number(track));
     row[5] = new QStandardItem(QString(std::to_string((f.tag()->track())).c_str()));
+
+    row[4]->setData(sec, Qt::UserRole);
+    row[5]->setData(track, Qt::DisplayRole);
+
+    // Disable editing items
+    for(const auto& item : row)
+    {
+        item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+    }
     return row;
 }
 

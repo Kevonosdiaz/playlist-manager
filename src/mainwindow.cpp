@@ -36,11 +36,16 @@ MainWindow::MainWindow(QWidget* parent)
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
     ui->songViewer->setModel(song_model);
 
-    // Fix row height based on album art size
+    // Fix row height based on album art size and resize columns dynamically
     ui->songViewer->verticalHeader()->setDefaultSectionSize(ART_SIZE + 8);
-    // Resize columns based on contents
+    ui->songViewer->horizontalHeader()->setMinimumSectionSize(30);
     ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->songViewer->horizontalHeader()->setStretchLastSection(true);
+
+    // Enable sorting by column, default by title
+    ui->songViewer->setSortingEnabled(true);
+    ui->songViewer->horizontalHeader()->setSortIndicatorShown(true);
+    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
 
     // Initialize file explorer to music directory if it exists, otherwise home
     QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
