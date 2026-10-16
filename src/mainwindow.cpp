@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
 
     // Initialize song viewer QTableView headers
-    song_model = new QStandardItemModel(0, 7);
+    song_model = new QStandardItemModel(0, 7, this);
     song_model->setHorizontalHeaderLabels(
         {"Album Art", "Title", "Artist", "Album", "Length", "Track", ""});
 
