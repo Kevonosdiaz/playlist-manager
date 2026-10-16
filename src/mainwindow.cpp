@@ -1,6 +1,8 @@
 #include "mainwindow.h"
+#include "logger.h"
 #include "tag.h"
 #include "ui_mainwindow.h"
+
 #include <QDebug>
 #include <QDirListing>
 #include <QFileDialog>
@@ -108,7 +110,12 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 
     // Exit if empty
     if(dir.begin() == dir.end())
+    {
+        logger::sb_log(
+            ui->statusbar, "No files found in directory, skipping", LogLevel::Info, 3000);
+        logger::log("No files found in directory, skipping", LogLevel::Info);
         return;
+    }
 
     // Reset model data prior to filling out QFileSystemModel
     if(song_model->rowCount() > 0)
