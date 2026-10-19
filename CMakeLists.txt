@@ -31,6 +31,8 @@ target_link_libraries(playlist-manager
         TagLib::tag
 )
 
+target_compile_options(playlist-manager PRIVATE -Wall -Wextra -Werror -Wconversion -Wshadow -Wpedantic -Wno-missing-field-initializers)
+
 install(TARGETS playlist-manager
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
