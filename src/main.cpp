@@ -5,6 +5,9 @@
 int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
+    QApplication::setOrganizationName("Kevonosdiaz");
+    QApplication::setApplicationName("playlist-manager");
+    QApplication::setApplicationDisplayName("Playlist Manager");
 
     // Set higher global font size
     QFont global_font = QApplication::font();

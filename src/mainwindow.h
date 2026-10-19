@@ -31,9 +31,17 @@ private:
     QStandardItemModel* song_model;
     QFileSystemModel*   fs_model;
     const QStringList   VALID_FILETYPES{
-        "*.mp3", "*.mp2", "*.ogg",  "*.oga",  "*.opus", "*.flac", "*.m4a",
-        "*.mp4", "*.aac", "*.wav",  "*.wave", "*.wv",   "*.mpc",  "*.ape",
-        "*.wma", "*.aif", "*.aiff", "*.dsf",  "*.dff",  "*.sacd",
+        "*.mp3",
+        "*.ogg",
+        "*.oga",
+        "*.opus",
+        "*.flac",
+        "*.m4a",
+        "*.mp4",
+        "*.aac",
+        "*.wav",
+        "*.wave",
+        "*.wv",
     };
 
     void load_dir_to_songviewer(const QString& dirpath);
