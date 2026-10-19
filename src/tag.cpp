@@ -64,8 +64,11 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
 // Retrieves embedded album art from file using TagLib
 QPixmap get_image_data(const TagLib::FileRef& f)
 {
+    QPixmap                          res;
     TagLib::List<TagLib::VariantMap> pictures = f.complexProperties("PICTURE");
-    TagLib::VariantMap               cover_pic;
+    if(pictures.isEmpty())
+        return res;
+    TagLib::VariantMap cover_pic;
     for(const auto& pic : pictures)
     {
         if(pic["pictureType"].value<TagLib::String>() == "Front Cover")
@@ -75,11 +78,10 @@ QPixmap get_image_data(const TagLib::FileRef& f)
         }
     }
     if(cover_pic.isEmpty())
-        return QPixmap();
+        return res;
     // Load in image data to QPixmap
     TagLib::ByteVector img_data = cover_pic["data"].value<TagLib::ByteVector>();
     QByteArray         qba{img_data.data(), img_data.size()};
-    QPixmap            res;
     res.loadFromData(qba);
     return res;
 }
