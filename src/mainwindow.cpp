@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "tag.h"
 #include "ui_mainwindow.h"
+#include "util.h"
 
 #include <QDebug>
 #include <QDirListing>
@@ -30,11 +31,11 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
 
     // Initialize song viewer QTableView headers
+    // Empty last element to allow blank space to be stretched to occupy empty space
     song_model = new QStandardItemModel(0, 7, this);
     song_model->setHorizontalHeaderLabels(
         {"Album Art", "Title", "Artist", "Album", "Length", "Track", ""});
 
-    constexpr int ART_SIZE = 64;
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
     ui->songViewer->setModel(song_model);
 
@@ -84,6 +85,7 @@ void MainWindow::open_playlist_file_selector()
 {
     QString filename = QFileDialog::getOpenFileName(
         this, "Open Playlist File", "", "M3U Media Playlist (*.m3u *.m3u8)");
+    logger::log(filename, LogLevel::Debug);
 }
 
 void MainWindow::open_music_dir_selector()
@@ -112,7 +114,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     if(dir.begin() == dir.end())
     {
         logger::sb_log(
-            ui->statusbar, "No files found in directory, skipping", LogLevel::Info, 3000);
+            ui->statusbar, "No files found in directory, skipping", LogLevel::Info, 2000);
         logger::log("No files found in directory, skipping", LogLevel::Info);
         return;
     }

@@ -1,4 +1,6 @@
 #include "tag.h"
+#include "logger.h"
+#include "util.h"
 #include <QByteArray>
 #include <QPixmap>
 #include <QStandardItem>
@@ -18,7 +20,7 @@ QString format_duration_seconds(const int sec)
 
 // NOTE: Ensure a model takes ownership of returned item
 // to handle it's memory
-// TODO: Handle missing tags explicitly
+// Fetch song metadata into row of items to append to a QStandardItemModel
 QList<QStandardItem*> song_to_item(const QString& filepath)
 {
     TagLib::FileRef f{filepath.toUtf8().constData()};
@@ -26,22 +28,33 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
         return QList<QStandardItem*>();
     // Hold album art, title, artist, album, length, track number
     QList<QStandardItem*> row(6);
-    row[0] = new QStandardItem(QIcon(get_image_data(f)), "");
-    row[0]->setSizeHint(QSize(64, 64));
-    row[1]    = new QStandardItem(QString(f.tag()->title().toCString(true)));
-    row[2]    = new QStandardItem(QString(f.tag()->artist().toCString(true)));
-    row[3]    = new QStandardItem(QString(f.tag()->album().toCString(true)));
-    int sec   = f.audioProperties()->lengthInSeconds();
-    row[4]    = new QStandardItem(format_duration_seconds(sec));
-    int track = f.tag()->track();
-    // row[5]    = new QStandardItem(QString::number(track));
-    row[5] = new QStandardItem(QString(std::to_string((f.tag()->track())).c_str()));
 
+    const TagLib::Tag*             tag  = f.tag();
+    const TagLib::AudioProperties* prop = f.audioProperties();
+    row[0]                              = new QStandardItem(QIcon(get_image_data(f)), "");
+
+    if(!tag || !prop)
+    {
+        logger::log(QString("Unable to read song metadata for %1").arg(filepath), LogLevel::Info);
+        return {};
+    }
+
+    row[0]->setSizeHint(QSize(ART_SIZE, ART_SIZE));
+    row[1] = new QStandardItem(QString(f.tag()->title().toCString(true)));
+    row[2] = new QStandardItem(QString(f.tag()->artist().toCString(true)));
+    row[3] = new QStandardItem(QString(f.tag()->album().toCString(true)));
+
+    // Set integer property to use for sorting instead of string
+    int sec = f.audioProperties()->lengthInSeconds();
+    row[4]  = new QStandardItem(format_duration_seconds(sec));
     row[4]->setData(sec, Qt::UserRole);
-    row[5]->setData(track, Qt::DisplayRole);
+
+    int track = f.tag()->track();
+    row[5]    = new QStandardItem(QString::number(track));
+    row[5]->setData(track, Qt::UserRole);
 
     // Disable editing items
-    for(const auto& item : row)
+    for(const auto& item : std::as_const(row))
     {
         item->setFlags(item->flags() & ~Qt::ItemIsEditable);
     }
@@ -56,8 +69,10 @@ QPixmap get_image_data(const TagLib::FileRef& f)
     for(const auto& pic : pictures)
     {
         if(pic["pictureType"].value<TagLib::String>() == "Front Cover")
+        {
             cover_pic = pic;
-        break;
+            break;
+        }
     }
     if(cover_pic.isEmpty())
         return QPixmap();
