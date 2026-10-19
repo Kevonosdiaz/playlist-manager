@@ -9,13 +9,16 @@
 #include <format>
 #include <taglib/fileref.h>
 
-// Helper to convert seconds to min:sec format
-QString format_duration_seconds(const int sec)
+namespace
 {
-    std::chrono::seconds duration(sec);
-    if(sec >= 3600)
-        return QString(std::format("{:%H:%M:%S}", duration).c_str());
-    return QString(std::format("{:%M:%S}", duration).c_str());
+    // Helper to convert seconds to min:sec format
+    QString format_duration_seconds(int sec)
+    {
+        std::chrono::seconds duration(sec);
+        if(sec >= 3600)
+            return QString(std::format("{:%H:%M:%S}", duration).c_str());
+        return QString(std::format("{:%M:%S}", duration).c_str());
+    }
 }
 
 // NOTE: Ensure a model takes ownership of returned item
@@ -51,7 +54,7 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
 
     int track = tag->track();
     row[5]    = new QStandardItem(QString::number(track));
-    row[5]->setData(track, Qt::UserRole);
+    row[5]->setData(track, Qt::DisplayRole);
 
     // Disable editing items
     for(const auto& item : std::as_const(row))
