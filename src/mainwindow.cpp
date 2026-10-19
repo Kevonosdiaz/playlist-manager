@@ -8,13 +8,12 @@
 #include <QDirListing>
 #include <QFileDialog>
 #include <QFileSystemModel>
+#include <QFontMetrics>
+#include <QHeaderView>
 #include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTableView>
 #include <QTreeView>
-
-#include <QFontMetrics>
-#include <QHeaderView>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -95,6 +94,8 @@ void MainWindow::open_music_dir_selector()
         tr("Open Directory"),
         QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
 
+    if(dirpath.isEmpty())
+        return;
     load_dir_to_songviewer(dirpath);
 }
 
@@ -124,10 +125,13 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         song_model->removeRows(0, song_model->rowCount());
 
     // Extract song metadata using TagLib before appending to table
+    int count = 0;
     for(const auto& f : dir)
     {
         auto items = song_to_item(f.absoluteFilePath());
         song_model->appendRow(items);
+        count++;
     }
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
+    logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(count), LogLevel::Info);
 }
