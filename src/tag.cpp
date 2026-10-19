@@ -31,7 +31,6 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
 
     const TagLib::Tag*             tag  = f.tag();
     const TagLib::AudioProperties* prop = f.audioProperties();
-    row[0]                              = new QStandardItem(QIcon(get_image_data(f)), "");
 
     if(!tag || !prop)
     {
@@ -39,17 +38,18 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
         return {};
     }
 
+    row[0] = new QStandardItem(QIcon(get_image_data(f)), "");
     row[0]->setSizeHint(QSize(ART_SIZE, ART_SIZE));
-    row[1] = new QStandardItem(QString(f.tag()->title().toCString(true)));
-    row[2] = new QStandardItem(QString(f.tag()->artist().toCString(true)));
-    row[3] = new QStandardItem(QString(f.tag()->album().toCString(true)));
+    row[1] = new QStandardItem(QString(tag->title().toCString(true)));
+    row[2] = new QStandardItem(QString(tag->artist().toCString(true)));
+    row[3] = new QStandardItem(QString(tag->album().toCString(true)));
 
     // Set integer property to use for sorting instead of string
-    int sec = f.audioProperties()->lengthInSeconds();
+    int sec = prop->lengthInSeconds();
     row[4]  = new QStandardItem(format_duration_seconds(sec));
     row[4]->setData(sec, Qt::UserRole);
 
-    int track = f.tag()->track();
+    int track = tag->track();
     row[5]    = new QStandardItem(QString::number(track));
     row[5]->setData(track, Qt::UserRole);
 

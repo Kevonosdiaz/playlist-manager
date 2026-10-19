@@ -1,7 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <QApplication>
 #include <QDebug>
 #include <QStatusBar>
 
@@ -35,7 +34,7 @@ inline QString level_to_string(LogLevel level)
 namespace logger
 {
     void log(const QString& msg, LogLevel level = LogLevel::Debug);
-    void sb_log(QStatusBar* sb, const QString& msg, LogLevel level, int timeout = 0);
+    void sb_log(QStatusBar* sb, const QString& msg, LogLevel level, int timeout = 2000);
 };
 
 #endif /* LOGGER_H */

@@ -4,11 +4,9 @@
 #include "ui_mainwindow.h"
 #include "util.h"
 
-#include <QDebug>
 #include <QDirListing>
 #include <QFileDialog>
 #include <QFileSystemModel>
-#include <QFontMetrics>
 #include <QHeaderView>
 #include <QStandardItemModel>
 #include <QStandardPaths>
@@ -114,8 +112,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     // Exit if empty
     if(dir.begin() == dir.end())
     {
-        logger::sb_log(
-            ui->statusbar, "No files found in directory, skipping", LogLevel::Info, 2000);
+        logger::sb_log(ui->statusbar, "No files found in directory, skipping", LogLevel::Info);
         logger::log("No files found in directory, skipping", LogLevel::Info);
         return;
     }
@@ -129,8 +126,11 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     for(const auto& f : dir)
     {
         auto items = song_to_item(f.absoluteFilePath());
-        song_model->appendRow(items);
-        count++;
+        if(!items.empty())
+        {
+            song_model->appendRow(items);
+            count++;
+        }
     }
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
     logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(count), LogLevel::Info);
