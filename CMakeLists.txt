@@ -22,6 +22,9 @@ qt_add_executable(playlist-manager
     src/logger.h
     src/logger.cpp
     src/util.h
+    src/song.h
+    src/songtablemodel.h
+    src/songtablemodel.cpp
 )
 
 target_link_libraries(playlist-manager

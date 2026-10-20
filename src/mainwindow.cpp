@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget* parent)
     }
     fs_model = new QFileSystemModel(ui->fileExplorer);
     fs_model->setRootPath(default_dir.absolutePath());
-    fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden);
+    fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
     ui->fileExplorer->setModel(fs_model);
     ui->fileExplorer->setRootIndex(fs_model->index(default_dir.absolutePath()));
 
@@ -88,9 +88,7 @@ void MainWindow::open_playlist_file_selector()
 void MainWindow::open_music_dir_selector()
 {
     QString dirpath = QFileDialog::getExistingDirectory(
-        this,
-        tr("Open Directory"),
-        QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+        this, "Open Directory", QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
 
     if(dirpath.isEmpty())
         return;
