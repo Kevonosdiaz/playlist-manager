@@ -19,6 +19,31 @@ namespace
             return QString(std::format("{:%H:%M:%S}", duration).c_str());
         return QString(std::format("{:%M:%S}", duration).c_str());
     }
+
+    // Retrieves embedded album art from file using TagLib
+    QPixmap get_image_data(const TagLib::FileRef& f)
+    {
+        QPixmap                          res;
+        TagLib::List<TagLib::VariantMap> pictures = f.complexProperties("PICTURE");
+        if(pictures.isEmpty())
+            return res;
+        TagLib::VariantMap cover_pic;
+        for(const auto& pic : pictures)
+        {
+            if(pic["pictureType"].value<TagLib::String>() == "Front Cover")
+            {
+                cover_pic = pic;
+                break;
+            }
+        }
+        if(cover_pic.isEmpty())
+            return res;
+        // Load in image data to QPixmap
+        TagLib::ByteVector img_data = cover_pic["data"].value<TagLib::ByteVector>();
+        QByteArray         qba{img_data.data(), img_data.size()};
+        res.loadFromData(qba);
+        return res;
+    }
 }
 
 // NOTE: Ensure a model takes ownership of returned item
@@ -50,7 +75,7 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
     // Set integer property to use for sorting instead of string
     int sec = prop->lengthInSeconds();
     row[4]  = new QStandardItem(format_duration_seconds(sec));
-    row[4]->setData(sec, Qt::UserRole);
+    row[4]->setData(sec, SortRole);
 
     int track = tag->track();
     row[5]    = new QStandardItem(QString::number(track));
@@ -62,29 +87,4 @@ QList<QStandardItem*> song_to_item(const QString& filepath)
         item->setFlags(item->flags() & ~Qt::ItemIsEditable);
     }
     return row;
-}
-
-// Retrieves embedded album art from file using TagLib
-QPixmap get_image_data(const TagLib::FileRef& f)
-{
-    QPixmap                          res;
-    TagLib::List<TagLib::VariantMap> pictures = f.complexProperties("PICTURE");
-    if(pictures.isEmpty())
-        return res;
-    TagLib::VariantMap cover_pic;
-    for(const auto& pic : pictures)
-    {
-        if(pic["pictureType"].value<TagLib::String>() == "Front Cover")
-        {
-            cover_pic = pic;
-            break;
-        }
-    }
-    if(cover_pic.isEmpty())
-        return res;
-    // Load in image data to QPixmap
-    TagLib::ByteVector img_data = cover_pic["data"].value<TagLib::ByteVector>();
-    QByteArray         qba{img_data.data(), img_data.size()};
-    res.loadFromData(qba);
-    return res;
 }
