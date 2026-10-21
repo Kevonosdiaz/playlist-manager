@@ -64,19 +64,22 @@
     <addaction name="actionOpenFile"/>
     <addaction name="actionOpenDirectory"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
     <addaction name="actionAbout_Qt"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionSet_File_Explorer_Root"/>
+    <addaction name="actionToggle_Recursive_Directory_Scan"/>
+    <addaction name="actionToggle_Append_Directory_Scan"/>
+   </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -93,6 +96,21 @@
   <action name="actionOpenDirectory">
    <property name="text">
     <string>Open Directory</string>
+   </property>
+  </action>
+  <action name="actionSet_File_Explorer_Root">
+   <property name="text">
+    <string>Set File Explorer Root</string>
+   </property>
+  </action>
+  <action name="actionToggle_Recursive_Directory_Scan">
+   <property name="text">
+    <string>Toggle Recursive Directory Scan</string>
+   </property>
+  </action>
+  <action name="actionToggle_Append_Directory_Scan">
+   <property name="text">
+    <string>Toggle Appending Directory Scan</string>
    </property>
   </action>
  </widget>
