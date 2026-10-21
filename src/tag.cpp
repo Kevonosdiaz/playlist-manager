@@ -54,7 +54,7 @@ std::optional<Song> path_to_song(const QString& filepath)
     }
 
     song.path         = filepath;
-    song.img          = get_image_data(f);
+    song.cover        = get_image_data(f);
     song.title        = QString(tag->title().toCString(true));
     song.artist       = QString(tag->artist().toCString(true));
     song.album        = QString(tag->album().toCString(true));

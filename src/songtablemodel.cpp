@@ -22,12 +22,14 @@ SongTableModel::SongTableModel(QObject* parent)
 int SongTableModel::rowCount(const QModelIndex& parent) const
 {
     return (parent.isValid()) ? 0 : static_cast<int>(songs.size());
-};
+}
+
 int SongTableModel::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent);
     return Columns;
-};
+}
+
 QVariant SongTableModel::data(const QModelIndex& idx, int role) const
 {
     if(!idx.isValid() || idx.row() >= songs.size() || idx.column() >= columnCount())
@@ -39,8 +41,8 @@ QVariant SongTableModel::data(const QModelIndex& idx, int role) const
     switch(role)
     {
     case Qt::DecorationRole:
-        if(col == AlbumArt && !song.img.isNull())
-            return QIcon(song.img);
+        if(col == AlbumArt && !song.cover.isNull())
+            return QIcon(song.cover);
         return {};
     case Qt::DisplayRole:
         switch(col)
@@ -61,10 +63,12 @@ QVariant SongTableModel::data(const QModelIndex& idx, int role) const
     }
 
     return QVariant{};
-};
+}
+
 QVariant SongTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(orientation != Qt::Horizontal || role != Qt::DisplayRole)
+    if(orientation != Qt::Horizontal || role != Qt::DisplayRole || section < 0
+       || section >= Columns)
         return {};
     Column col = static_cast<Column>(section);
     switch(col)
@@ -82,9 +86,9 @@ QVariant SongTableModel::headerData(int section, Qt::Orientation orientation, in
     case Track:
         return "Track";
     default:
-        return "";
+        return {};
     }
-};
+}
 
 void SongTableModel::sort(int column, Qt::SortOrder order)
 {

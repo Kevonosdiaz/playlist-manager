@@ -8,9 +8,9 @@
 struct Song
 {
     QString  title, artist, album, path;
-    QPixmap  img;
-    uint32_t duration_sec;
-    uint32_t track = 0;
+    QPixmap  cover;
+    uint32_t duration_sec = 0;
+    uint32_t track        = 0;
 };
 
 #endif /* SONG_H */

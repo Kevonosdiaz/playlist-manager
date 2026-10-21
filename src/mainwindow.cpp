@@ -113,18 +113,14 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     }
 
     // Extract song metadata using TagLib before appending to table
-    int           count = 0;
     QVector<Song> songs;
     for(const auto& f : dir)
     {
         auto song = path_to_song(f.absoluteFilePath());
         if(song)
-        {
             songs.push_back(*song);
-            count++;
-        }
     }
-    song_model->set_songs(songs);
+    song_model->set_songs(std::move(songs));
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
-    logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(count), LogLevel::Info);
+    logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(songs.size()), LogLevel::Info);
 }

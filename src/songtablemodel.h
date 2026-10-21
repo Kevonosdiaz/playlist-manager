@@ -1,5 +1,5 @@
-#ifndef SONGMODEL_H
-#define SONGMODEL_H
+#ifndef SONGTABLEMODEL_H
+#define SONGTABLEMODEL_H
 
 #include "song.h"
 #include <QAbstractTableModel>
@@ -41,4 +41,4 @@ private:
     QVector<Song> songs;
 };
 
-#endif /* SONGMODEL_H */
+#endif /* SONGTABLEMODEL_H */
