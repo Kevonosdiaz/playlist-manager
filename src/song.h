@@ -1,7 +1,6 @@
 #ifndef SONG_H
 #define SONG_H
 
-#include <QAbstractTableModel>
 #include <QPixmap>
 #include <QString>
 
