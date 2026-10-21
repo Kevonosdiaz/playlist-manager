@@ -1,9 +1,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "songtablemodel.h"
 #include <QFileSystemModel>
 #include <QMainWindow>
-#include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -27,10 +27,10 @@ private slots:
     void open_explorer_dir(const QModelIndex& idx);
 
 private:
-    Ui::MainWindow*     ui;
-    QStandardItemModel* song_model;
-    QFileSystemModel*   fs_model;
-    const QStringList   VALID_FILETYPES{
+    Ui::MainWindow*   ui;
+    SongTableModel*   song_model;
+    QFileSystemModel* fs_model;
+    const QStringList VALID_FILETYPES{
         "*.mp3",
         "*.ogg",
         "*.oga",

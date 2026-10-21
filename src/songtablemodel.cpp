@@ -1,7 +1,21 @@
 #include "songtablemodel.h"
 #include <QIcon>
 #include <algorithm>
+#include <chrono>
+#include <format>
 #include <functional>
+
+namespace
+{
+    // Helper to convert seconds to min:sec format
+    QString format_duration_seconds(int sec)
+    {
+        std::chrono::seconds duration(sec);
+        if(sec >= 3600)
+            return QString(std::format("{:%H:%M:%S}", duration).c_str());
+        return QString(std::format("{:%M:%S}", duration).c_str());
+    }
+}
 
 SongTableModel::SongTableModel(QObject* parent)
     : QAbstractTableModel(parent) { };
@@ -39,7 +53,7 @@ QVariant SongTableModel::data(const QModelIndex& idx, int role) const
         case Album:
             return song.album;
         case Length:
-            return song.duration_sec;
+            return format_duration_seconds(song.duration_sec);
         case Track:
             return (song.track) ? song.track : QVariant{};
         default:
@@ -56,6 +70,8 @@ QVariant SongTableModel::headerData(int section, Qt::Orientation orientation, in
     Column col = static_cast<Column>(section);
     switch(col)
     {
+    case AlbumArt:
+        return "Cover";
     case Title:
         return "Title";
     case Artist:
@@ -99,4 +115,11 @@ void SongTableModel::sort(int column, Qt::SortOrder order)
             return false;
         }
     });
+}
+
+void SongTableModel::set_songs(QVector<Song> other_songs)
+{
+    beginResetModel();
+    songs = std::move(other_songs);
+    endResetModel();
 }

@@ -35,6 +35,8 @@ public:
                         int             role = Qt::DisplayRole) const override;
     void     sort(int column, Qt::SortOrder order) override;
 
+    void set_songs(QVector<Song> other_songs);
+
 private:
     QVector<Song> songs;
 };

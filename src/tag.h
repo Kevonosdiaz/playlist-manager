@@ -1,12 +1,9 @@
 #ifndef TAG_H
 #define TAG_H
-#include <QList>
-#include <QPixmap>
-#include <QStandardItem>
+#include "song.h"
 #include <taglib/fileref.h>
 
-// Extract tags for provided song filepath and returns
-// list of QStandardItem with columns populated with metadata
-QList<QStandardItem*> song_to_item(const QString& filepath);
+// Extract tags for provided song filepath and returns Song struct
+std::optional<Song> path_to_song(const QString& filepath);
 
 #endif // TAG_H

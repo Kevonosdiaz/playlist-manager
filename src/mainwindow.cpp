@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
     // Set default splitter sizes for left/right sides
-    ui->mainSplitter->setSizes({400, 784});
+    ui->mainSplitter->setSizes({350, 814});
 
     connect(
         ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
@@ -28,10 +28,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
 
     // Initialize song viewer QTableView headers
-    // Empty last element to allow blank space to be stretched to occupy empty space
-    song_model = new QStandardItemModel(0, 7, this);
-    song_model->setHorizontalHeaderLabels(
-        {"Album Art", "Title", "Artist", "Album", "Length", "Track", ""});
+    song_model = new SongTableModel(this);
 
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
     ui->songViewer->setModel(song_model);
@@ -41,6 +38,7 @@ MainWindow::MainWindow(QWidget* parent)
     ui->songViewer->horizontalHeader()->setMinimumSectionSize(30);
     ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->songViewer->horizontalHeader()->setStretchLastSection(true);
+    ui->songViewer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
 
     // Enable sorting by column
     ui->songViewer->setSortingEnabled(true);
@@ -115,21 +113,19 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         return;
     }
 
-    // Reset model data prior to filling out QFileSystemModel
-    if(song_model->rowCount() > 0)
-        song_model->removeRows(0, song_model->rowCount());
-
     // Extract song metadata using TagLib before appending to table
-    int count = 0;
+    int           count = 0;
+    QVector<Song> songs;
     for(const auto& f : dir)
     {
-        auto items = song_to_item(f.absoluteFilePath());
-        if(!items.empty())
+        auto song = path_to_song(f.absoluteFilePath());
+        if(song)
         {
-            song_model->appendRow(items);
+            songs.push_back(*song);
             count++;
         }
     }
+    song_model->set_songs(songs);
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
     logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(count), LogLevel::Info);
 }
