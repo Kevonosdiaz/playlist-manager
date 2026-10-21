@@ -41,6 +41,4 @@ private:
     QVector<Song> songs;
 };
 
-// Add in functions to work with song model
-
 #endif /* SONGMODEL_H */

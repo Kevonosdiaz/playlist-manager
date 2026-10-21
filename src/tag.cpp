@@ -2,7 +2,6 @@
 #include "logger.h"
 #include <QByteArray>
 #include <QPixmap>
-#include <QStandardItem>
 #include <QString>
 #include <taglib/fileref.h>
 

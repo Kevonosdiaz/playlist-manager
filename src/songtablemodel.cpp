@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <chrono>
 #include <format>
-#include <functional>
 
 namespace
 {
@@ -89,34 +88,30 @@ QVariant SongTableModel::headerData(int section, Qt::Orientation orientation, in
 
 void SongTableModel::sort(int column, Qt::SortOrder order)
 {
-    Column col = static_cast<Column>(column);
-    // Use type erasure to store either std::less or std::greater in cmp
-    std::function<bool(QString, QString)> str_cmp
-        = (order == Qt::AscendingOrder)
-              ? std::function<bool(QString, QString)>(std::less<QString>{})
-              : std::function<bool(QString, QString)>(std::greater<QString>{});
-    std::function<bool(int, int)> int_cmp
-        = (order == Qt::AscendingOrder) ? std::function<bool(int, int)>(std::less<int>{})
-                                        : std::function<bool(int, int)>(std::greater<int>{});
+    Column     col = static_cast<Column>(column);
+    const bool asc = order == Qt::AscendingOrder;
     std::sort(songs.begin(), songs.end(), [&](const Song& a, const Song& b) {
         switch(col)
         {
         case Title:
-            return str_cmp(a.title, b.title);
+            return asc ? a.title < b.title : b.title < a.title;
         case Artist:
-            return str_cmp(a.artist, b.artist);
+            return asc ? a.artist < b.artist : b.artist < a.artist;
         case Album:
-            return str_cmp(a.album, b.album);
+            return asc ? a.album < b.album : b.album < a.album;
         case Length:
-            return int_cmp(a.duration_sec, b.duration_sec);
+            return asc ? a.duration_sec < b.duration_sec : b.duration_sec < a.duration_sec;
         case Track:
-            return int_cmp(a.track, b.track);
+            return asc ? a.track < b.track : b.track < a.track;
         default:
             return false;
         }
     });
+
+    emit layoutChanged();
 }
 
+// Replace the currently stored songs with other_songs
 void SongTableModel::set_songs(QVector<Song> other_songs)
 {
     beginResetModel();

@@ -8,7 +8,6 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QHeaderView>
-#include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTableView>
 #include <QTreeView>
