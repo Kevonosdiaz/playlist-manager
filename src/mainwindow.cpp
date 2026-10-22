@@ -102,7 +102,8 @@ void MainWindow::open_explorer_dir(const QModelIndex& idx)
 
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
-    QDirListing dir(dirpath, VALID_FILETYPES, QDirListing::IteratorFlag::FilesOnly);
+    static QString last_open_dir = "";
+    QDirListing    dir(dirpath, VALID_FILETYPES, QDirListing::IteratorFlag::FilesOnly);
 
     // Exit if empty
     if(dir.begin() == dir.end())
@@ -112,6 +113,17 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         return;
     }
 
+    // Skip reopening if same as last opened directory
+    if(dirpath == last_open_dir)
+    {
+        logger::sb_log(
+            ui->statusbar, "Attempted to reopen same directory, skipping", LogLevel::Info);
+        logger::log("Attempted to reopen same directory, skipping", LogLevel::Info);
+        return;
+    }
+
+    last_open_dir = dirpath;
+
     // Extract song metadata using TagLib before appending to table
     QVector<Song> songs;
     for(const auto& f : dir)
@@ -120,7 +132,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         if(song)
             songs.push_back(*song);
     }
-    song_model->set_songs(std::move(songs));
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
     logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(songs.size()), LogLevel::Info);
+    song_model->set_songs(std::move(songs));
 }
