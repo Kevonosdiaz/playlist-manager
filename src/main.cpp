@@ -11,11 +11,10 @@ int main(int argc, char* argv[])
     QApplication::setApplicationDisplayName(u"Playlist Manager"_s);
     QApplication a(argc, argv);
 
+    // Restore font size setting or default to 14pt
     QSettings settings;
-
-    // Set higher global font size
-    QFont global_font = QApplication::font();
-    global_font.setPointSize(14);
+    QFont     global_font = QApplication::font();
+    global_font.setPointSize(settings.value("font_size", 14).toInt());
     QApplication::setFont(global_font);
     MainWindow w;
     w.show();

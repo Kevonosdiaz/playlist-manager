@@ -8,6 +8,7 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QHeaderView>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTableView>
 #include <QTreeView>
@@ -66,6 +67,9 @@ MainWindow::MainWindow(QWidget* parent)
 
     // On single click file explorer item: open dir in song viewer
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
+
+    // Restore window geometry
+    restore_window_settings();
 }
 
 MainWindow::~MainWindow()
@@ -138,4 +142,22 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
     logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(songs.size()), LogLevel::Info);
     song_model->set_songs(std::move(songs));
+}
+
+// Save window geometry and state on app close
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    QSettings s;
+    s.setValue("window/geometry", saveGeometry());
+    s.setValue("window/state", saveState());
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::restore_window_settings()
+{
+    QSettings s;
+    if(s.contains("window/geometry"))
+        restoreGeometry(s.value("window/geometry").toByteArray());
+    if(s.contains("window/state"))
+        restoreState(s.value("window/state").toByteArray());
 }
