@@ -16,18 +16,19 @@ enum class LogLevel
 
 inline QString level_to_string(LogLevel level)
 {
+    using namespace Qt::StringLiterals;
     switch(level)
     {
     case LogLevel::Debug:
-        return "[Debug] ";
+        return u"[Debug] "_s;
     case LogLevel::Info:
-        return "[Info] ";
+        return u"[Info] "_s;
     case LogLevel::Warn:
-        return "[Warning] ";
+        return u"[Warning] "_s;
     case LogLevel::Critical:
-        return "[Critical] ";
+        return u"[Critical] "_s;
     default:
-        return "[Fatal] ";
+        return u"[Fatal] "_s;
     }
 }
 

@@ -12,6 +12,9 @@
 #include <QTableView>
 #include <QTreeView>
 
+// Allow ""_s operator on string literals for compile time QString construction
+using namespace Qt::StringLiterals;
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -78,14 +81,14 @@ void MainWindow::open_about_qt()
 void MainWindow::open_playlist_file_selector()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this, "Open Playlist File", "", "M3U Media Playlist (*.m3u *.m3u8)");
+        this, u"Open Playlist File"_s, QString(), u"M3U Media Playlist (*.m3u *.m3u8)"_s);
     logger::log(filename, LogLevel::Debug);
 }
 
 void MainWindow::open_music_dir_selector()
 {
     QString dirpath = QFileDialog::getExistingDirectory(
-        this, "Open Directory", QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+        this, u"Open Directory"_s, QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
 
     if(dirpath.isEmpty())
         return;
@@ -102,14 +105,14 @@ void MainWindow::open_explorer_dir(const QModelIndex& idx)
 
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
-    static QString last_open_dir = "";
+    static QString last_open_dir;
     QDirListing    dir(dirpath, VALID_FILETYPES, QDirListing::IteratorFlag::FilesOnly);
 
     // Exit if empty
     if(dir.begin() == dir.end())
     {
-        logger::sb_log(ui->statusbar, "No files found in directory, skipping", LogLevel::Info);
-        logger::log("No files found in directory, skipping", LogLevel::Info);
+        logger::sb_log(ui->statusbar, u"No files found in directory, skipping"_s, LogLevel::Info);
+        logger::log(u"No files found in directory, skipping"_s, LogLevel::Info);
         return;
     }
 
@@ -117,8 +120,8 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     if(dirpath == last_open_dir)
     {
         logger::sb_log(
-            ui->statusbar, "Attempted to reopen same directory, skipping", LogLevel::Info);
-        logger::log("Attempted to reopen same directory, skipping", LogLevel::Info);
+            ui->statusbar, u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
+        logger::log(u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
         return;
     }
 
