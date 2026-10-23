@@ -47,6 +47,9 @@ private:
         "*.wv",
     };
 
+    // Track open dirs in song viewer (or dirs in append mode)
+    QSet<QString> open_dirs;
+
     void setup_models();
     void setup_views();
     void load_dir_to_songviewer(const QString& dirpath);

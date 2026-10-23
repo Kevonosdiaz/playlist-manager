@@ -120,7 +120,18 @@ void MainWindow::toggle_recursive_directory_scan()
 }
 
 // Toggle setting to append song files to song viewer
-void MainWindow::toggle_appending_directory_scan() { }
+void MainWindow::toggle_appending_directory_scan()
+{
+    QSettings s;
+    bool      new_val = !s.value(u"files/useAppendingScan"_s, false).toBool();
+    s.setValue(u"files/useAppendingScan"_s, new_val);
+    ui->actionToggleAppendDirectoryScan->setChecked(new_val);
+
+    // We should clear open dirs if append mode got turned off, so
+    // a user can reopen a directory while clearing other open dirs
+    if(!new_val)
+        open_dirs.clear();
+}
 
 // Initialize data models and configure properties
 void MainWindow::setup_models()
@@ -169,13 +180,17 @@ void MainWindow::setup_views()
 }
 
 // Scan song files into Song structs and load into SongTableModel
+// TODO: Break down this function into smaller pieces?
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
-    static QString last_open_dir;
+    QSettings s;
+    bool      recursive_mode = s.value(u"files/useRecursiveScan"_s, false).toBool();
+    bool      append_mode    = s.value(u"files/useAppendingScan"_s, false).toBool();
+
+    // If recursive mode is on, add flag to scan subdirs for songs
     using F                               = QDirListing::IteratorFlag;
-    QDirListing::IteratorFlags iter_flags = F::FilesOnly;
-    QSettings                  s;
-    if(s.value("files/useRecursiveScan", false).toBool())
+    QDirListing::IteratorFlags iter_flags = F::ExcludeOther;
+    if(recursive_mode)
         iter_flags |= F::Recursive;
 
     QDirListing dir(dirpath, VALID_FILETYPES, iter_flags);
@@ -188,8 +203,9 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         return;
     }
 
-    // Skip reopening if same as last opened directory
-    if(dirpath == last_open_dir)
+    // Skip reopening if already opened/scanned dir
+    // Note: does not prevent recursive scan from finding repeats; open_dirs handles those
+    if(open_dirs.contains(dirpath))
     {
         logger::sb_log(
             ui->statusbar, u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
@@ -197,18 +213,55 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         return;
     }
 
-    last_open_dir = dirpath;
+    // If not in append mode we only consider one directory open at a time, so clear old paths
+    if(!append_mode)
+        open_dirs.clear();
 
-    // Extract song metadata using TagLib before appending to table
+    // Extract song metadata using TagLib before replacing/appending to table
     QVector<Song> songs;
-    for(const auto& f : dir)
+    QSet<QString> new_exclusions;
+    for(const auto& item : dir)
     {
-        auto song = path_to_song(f.absoluteFilePath());
+        // What should we do with symlinks eventually? Resolve them?
+        if(item.isSymLink())
+            continue;
+
+        // Skip item if it begins with a directory path we already opened
+        QString fp        = item.absoluteFilePath();
+        bool    skip_flag = false;
+        for(const QString& dirname : open_dirs)
+        {
+            if(fp.startsWith(dirname))
+            {
+                qDebug() << "fp: " << fp << "begins with dirname: " << dirname;
+                skip_flag = true;
+                break;
+            }
+        }
+        if(skip_flag)
+            continue;
+
+        if(item.isDir())
+        {
+            // Append a '/' to avoid potential false positives during exclusion
+            new_exclusions.insert(fp + "/");
+            continue;
+        }
+
+        auto song = path_to_song(fp);
         if(song)
             songs.push_back(*song);
     }
-    logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(songs.size()), LogLevel::Info);
-    song_model->set_songs(std::move(songs));
+
+    open_dirs.insert(dirpath);
+    open_dirs += new_exclusions;
+
+    logger::sb_log(ui->statusbar, QString("Loaded %1 song(s)").arg(songs.size()), LogLevel::Info);
+
+    if(append_mode)
+        song_model->add_songs(std::move(songs));
+    else
+        song_model->set_songs(std::move(songs));
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
 }
 
@@ -230,9 +283,12 @@ void MainWindow::restore_window_settings()
         restoreState(s.value("window/state").toByteArray());
 }
 
+// Restore state of check boxes in menubar
 void MainWindow::restore_menubar_settings()
 {
     QSettings s;
-    bool      checked = s.value("files/useRecursiveScan", false).toBool();
-    ui->actionToggleRecursiveDirectoryScan->setChecked(checked);
+    bool      recursive_checked = s.value(u"files/useRecursiveScan"_s, false).toBool();
+    ui->actionToggleRecursiveDirectoryScan->setChecked(recursive_checked);
+    bool append_checked = s.value(u"files/useAppendingScan"_s, false).toBool();
+    ui->actionToggleAppendDirectoryScan->setChecked(append_checked);
 }

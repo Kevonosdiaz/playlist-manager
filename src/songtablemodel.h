@@ -36,6 +36,7 @@ public:
     void     sort(int column, Qt::SortOrder order) override;
 
     void set_songs(QVector<Song> other_songs);
+    void add_songs(QVector<Song> other_songs);
 
 private:
     QVector<Song> songs;

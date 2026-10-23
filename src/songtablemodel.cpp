@@ -7,7 +7,7 @@
 namespace
 {
     // Helper to convert seconds to min:sec format
-    QString format_duration_seconds(int sec)
+    QString format_duration_seconds(uint32_t sec)
     {
         std::chrono::seconds duration(sec);
         if(sec >= 3600)
@@ -121,4 +121,17 @@ void SongTableModel::set_songs(QVector<Song> other_songs)
     beginResetModel();
     songs = std::move(other_songs);
     endResetModel();
+}
+
+// Append other_songs onto songs
+void SongTableModel::add_songs(QVector<Song> other_songs)
+{
+    if(other_songs.empty())
+        return;
+    // Inform model of first and last indices of new items to be added
+    int first = static_cast<int>(songs.size());
+    int last  = static_cast<int>(other_songs.size()) + first - 1;
+    beginInsertRows(QModelIndex(), first, last);
+    songs += other_songs;
+    endInsertRows();
 }
