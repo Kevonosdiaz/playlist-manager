@@ -207,9 +207,9 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         if(song)
             songs.push_back(*song);
     }
-    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
     logger::sb_log(ui->statusbar, QString("Loaded %1 songs").arg(songs.size()), LogLevel::Info);
     song_model->set_songs(std::move(songs));
+    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
 }
 
 // Save window geometry and app state on app close
