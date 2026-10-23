@@ -24,48 +24,15 @@ MainWindow::MainWindow(QWidget* parent)
     // Set default splitter sizes for left/right sides
     ui->mainSplitter->setSizes({350, 814});
 
+    setup_models();
+    setup_views();
+
+    // Handle signal-slot connections
     connect(
         ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
     connect(
         ui->actionOpenDirectory, &QAction::triggered, this, &MainWindow::open_music_dir_selector);
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
-
-    // Initialize song viewer QTableView headers
-    song_model = new SongTableModel(this);
-
-    ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
-    ui->songViewer->setModel(song_model);
-
-    // Fix row height based on album art size and resize columns dynamically
-    ui->songViewer->verticalHeader()->setDefaultSectionSize(ART_SIZE + 8);
-    ui->songViewer->horizontalHeader()->setMinimumSectionSize(30);
-    ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    ui->songViewer->horizontalHeader()->setStretchLastSection(true);
-    ui->songViewer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
-
-    // Enable sorting by column
-    ui->songViewer->setSortingEnabled(true);
-    ui->songViewer->horizontalHeader()->setSortIndicatorShown(true);
-
-    // Initialize file explorer to music directory if it exists, otherwise home
-    QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
-    if(!default_dir.exists())
-    {
-        default_dir = QDir::homePath();
-    }
-    fs_model = new QFileSystemModel(ui->fileExplorer);
-    fs_model->setRootPath(default_dir.absolutePath());
-    fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
-    ui->fileExplorer->setModel(fs_model);
-    ui->fileExplorer->setRootIndex(fs_model->index(default_dir.absolutePath()));
-
-    // Hide header and hide all columns except filename column
-    ui->fileExplorer->setHeaderHidden(true);
-    ui->fileExplorer->setColumnHidden(1, true);
-    ui->fileExplorer->setColumnHidden(2, true);
-    ui->fileExplorer->setColumnHidden(3, true);
-
-    // On single click file explorer item: open dir in song viewer
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
 
     // Restore window geometry
@@ -107,6 +74,51 @@ void MainWindow::open_explorer_dir(const QModelIndex& idx)
     load_dir_to_songviewer(dirpath);
 }
 
+// Initialize data models and configure properties
+void MainWindow::setup_models()
+{
+    // Initialize song viewer QTableView headers
+    song_model = new SongTableModel(this);
+
+    // Initialize file explorer to music directory if it exists, otherwise home
+    QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+    if(!default_dir.exists())
+    {
+        default_dir = QDir::homePath();
+    }
+    fs_model = new QFileSystemModel(ui->fileExplorer);
+    fs_model->setRootPath(default_dir.absolutePath());
+    fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
+}
+
+// Set models for views + configure view properties
+void MainWindow::setup_views()
+{
+    // Setup song viewer (QTableView)
+    ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
+    ui->songViewer->setModel(song_model);
+
+    // Fix row height based on album art size and resize columns dynamically
+    ui->songViewer->verticalHeader()->setDefaultSectionSize(ART_SIZE + 8);
+    ui->songViewer->horizontalHeader()->setMinimumSectionSize(30);
+    ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->songViewer->horizontalHeader()->setStretchLastSection(true);
+    ui->songViewer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+    ui->songViewer->setSortingEnabled(true);
+    ui->songViewer->horizontalHeader()->setSortIndicatorShown(true);
+
+    // Setup file explorer (QTreeView)
+    ui->fileExplorer->setModel(fs_model);
+    ui->fileExplorer->setRootIndex(fs_model->index(fs_model->rootPath()));
+
+    // Hide header and hide all columns except filename column
+    ui->fileExplorer->setHeaderHidden(true);
+    ui->fileExplorer->setColumnHidden(1, true);
+    ui->fileExplorer->setColumnHidden(2, true);
+    ui->fileExplorer->setColumnHidden(3, true);
+}
+
+// Scan song files into Song structs and load into SongTableModel
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     static QString last_open_dir;

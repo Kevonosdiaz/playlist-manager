@@ -44,6 +44,8 @@ private:
         "*.wv",
     };
 
+    void setup_models();
+    void setup_views();
     void load_dir_to_songviewer(const QString& dirpath);
     void closeEvent(QCloseEvent* event) override;
     void restore_window_settings();
