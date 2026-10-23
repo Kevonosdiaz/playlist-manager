@@ -32,4 +32,11 @@ namespace logger
         sb->showMessage(level_to_string(level) + msg, timeout);
     }
 
+    // Log out message to both status bar and stdout
+    void dual_log(QStatusBar* sb, const QString& msg, LogLevel level, int timeout)
+    {
+        log(msg, level);
+        sb_log(sb, msg, level, timeout);
+    }
+
 }

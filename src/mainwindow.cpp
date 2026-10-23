@@ -32,7 +32,19 @@ MainWindow::MainWindow(QWidget* parent)
         ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
     connect(
         ui->actionOpenDirectory, &QAction::triggered, this, &MainWindow::open_music_dir_selector);
-    connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::open_about_qt);
+    connect(ui->actionAboutQt, &QAction::triggered, this, &MainWindow::open_about_qt);
+    connect(ui->actionSetFileExplorerRoot,
+            &QAction::triggered,
+            this,
+            &MainWindow::set_file_explorer_root);
+    connect(ui->actionToggleRecursiveDirectoryScan,
+            &QAction::triggered,
+            this,
+            &MainWindow::toggle_recursive_directory_scan);
+    connect(ui->actionToggleAppendDirectoryScan,
+            &QAction::triggered,
+            this,
+            &MainWindow::toggle_appending_directory_scan);
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
 
     // Restore window geometry
@@ -74,20 +86,51 @@ void MainWindow::open_explorer_dir(const QModelIndex& idx)
     load_dir_to_songviewer(dirpath);
 }
 
+// Prompt user to select root for the QFileSystemModel file explorer
+void MainWindow::set_file_explorer_root()
+{
+    QString dirpath = QFileDialog::getExistingDirectory(
+        this, u"Open Directory"_s, QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+
+    if(dirpath.isEmpty())
+        return;
+
+    QString oldpath = fs_model->rootPath();
+    if(oldpath == dirpath)
+    {
+        logger::dual_log(ui->statusbar, u"Same file explorer root chosen, skipping"_s);
+        return;
+    }
+
+    QSettings s;
+    s.setValue(u"files/fileExplorerRoot"_s, dirpath);
+    fs_model->setRootPath(dirpath);
+    ui->fileExplorer->setRootIndex(fs_model->index(fs_model->rootPath()));
+    logger::dual_log(ui->statusbar, u"Set file explorer root to "_s + dirpath);
+}
+
+// Toggle setting to cause QDirListing to scan directories recursively for song files
+void MainWindow::toggle_recursive_directory_scan() { }
+
+// Toggle setting to append song files to song viewer
+void MainWindow::toggle_appending_directory_scan() { }
+
 // Initialize data models and configure properties
 void MainWindow::setup_models()
 {
     // Initialize song viewer QTableView headers
     song_model = new SongTableModel(this);
 
-    // Initialize file explorer to music directory if it exists, otherwise home
-    QDir default_dir = QDir(QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
-    if(!default_dir.exists())
+    // Initialize file explorer to saved root, otherwise Music dir or home
+    QSettings s;
+    QString   default_dir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    if(default_dir.isEmpty())
     {
         default_dir = QDir::homePath();
     }
-    fs_model = new QFileSystemModel(ui->fileExplorer);
-    fs_model->setRootPath(default_dir.absolutePath());
+    QString dir = s.value("files/fileExplorerRoot", default_dir).toString();
+    fs_model    = new QFileSystemModel(ui->fileExplorer);
+    fs_model->setRootPath(dir);
     fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
 }
 

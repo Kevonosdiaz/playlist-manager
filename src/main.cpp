@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     // Restore font size setting or default to 14pt
     QSettings settings;
     QFont     global_font = QApplication::font();
-    global_font.setPointSize(settings.value("font_size", 14).toInt());
+    global_font.setPointSize(settings.value("fontSize", 14).toInt());
     QApplication::setFont(global_font);
     MainWindow w;
     w.show();

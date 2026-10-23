@@ -25,6 +25,9 @@ private slots:
     void open_playlist_file_selector();
     void open_music_dir_selector();
     void open_explorer_dir(const QModelIndex& idx);
+    void set_file_explorer_root();
+    void toggle_recursive_directory_scan();
+    void toggle_appending_directory_scan();
 
 private:
     Ui::MainWindow*   ui;

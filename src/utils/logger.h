@@ -35,7 +35,14 @@ inline QString level_to_string(LogLevel level)
 namespace logger
 {
     void log(const QString& msg, LogLevel level = LogLevel::Info);
-    void sb_log(QStatusBar* sb, const QString& msg, LogLevel level, int timeout = 2000);
+    void sb_log(QStatusBar*    sb,
+                const QString& msg,
+                LogLevel       level   = LogLevel::Info,
+                int            timeout = 2000);
+    void dual_log(QStatusBar*    sb,
+                  const QString& msg,
+                  LogLevel       level   = LogLevel::Info,
+                  int            timeout = 2000);
 };
 
 #endif /* LOGGER_H */
