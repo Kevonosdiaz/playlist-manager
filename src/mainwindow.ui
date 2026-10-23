@@ -104,11 +104,17 @@
    </property>
   </action>
   <action name="actionToggleRecursiveDirectoryScan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Toggle Recursive Directory Scan</string>
    </property>
   </action>
   <action name="actionToggleAppendDirectoryScan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Toggle Appending Directory Scan</string>
    </property>

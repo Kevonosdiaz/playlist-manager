@@ -47,8 +47,9 @@ MainWindow::MainWindow(QWidget* parent)
             &MainWindow::toggle_appending_directory_scan);
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
 
-    // Restore window geometry
+    // Restore state from QSettings
     restore_window_settings();
+    restore_menubar_settings();
 }
 
 MainWindow::~MainWindow()
@@ -110,7 +111,13 @@ void MainWindow::set_file_explorer_root()
 }
 
 // Toggle setting to cause QDirListing to scan directories recursively for song files
-void MainWindow::toggle_recursive_directory_scan() { }
+void MainWindow::toggle_recursive_directory_scan()
+{
+    QSettings s;
+    bool      new_val = !s.value(u"files/useRecursiveScan"_s, false).toBool();
+    s.setValue(u"files/useRecursiveScan"_s, new_val);
+    ui->actionToggleRecursiveDirectoryScan->setChecked(new_val);
+}
 
 // Toggle setting to append song files to song viewer
 void MainWindow::toggle_appending_directory_scan() { }
@@ -165,7 +172,13 @@ void MainWindow::setup_views()
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     static QString last_open_dir;
-    QDirListing    dir(dirpath, VALID_FILETYPES, QDirListing::IteratorFlag::FilesOnly);
+    using F                               = QDirListing::IteratorFlag;
+    QDirListing::IteratorFlags iter_flags = F::FilesOnly;
+    QSettings                  s;
+    if(s.value("files/useRecursiveScan", false).toBool())
+        iter_flags |= F::Recursive;
+
+    QDirListing dir(dirpath, VALID_FILETYPES, iter_flags);
 
     // Exit if empty
     if(dir.begin() == dir.end())
@@ -199,7 +212,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     song_model->set_songs(std::move(songs));
 }
 
-// Save window geometry and state on app close
+// Save window geometry and app state on app close
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     QSettings s;
@@ -215,4 +228,11 @@ void MainWindow::restore_window_settings()
         restoreGeometry(s.value("window/geometry").toByteArray());
     if(s.contains("window/state"))
         restoreState(s.value("window/state").toByteArray());
+}
+
+void MainWindow::restore_menubar_settings()
+{
+    QSettings s;
+    bool      checked = s.value("files/useRecursiveScan", false).toBool();
+    ui->actionToggleRecursiveDirectoryScan->setChecked(checked);
 }
