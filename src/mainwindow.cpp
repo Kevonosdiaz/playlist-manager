@@ -1,8 +1,8 @@
 #include "mainwindow.h"
-#include "logger.h"
 #include "tag.h"
 #include "ui_mainwindow.h"
-#include "util.h"
+#include "utils/constants.h"
+#include "utils/logger.h"
 
 #include <QDirListing>
 #include <QFileDialog>

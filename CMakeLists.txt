@@ -19,12 +19,14 @@ qt_add_executable(playlist-manager
     src/mainwindow.ui
     src/tag.h
     src/tag.cpp
-    src/logger.h
-    src/logger.cpp
-    src/util.h
     src/song.h
     src/songtablemodel.h
     src/songtablemodel.cpp
+    src/utils/logger.h
+    src/utils/logger.cpp
+    src/utils/constants.h
+    src/utils/settings.h
+    src/utils/settings.cpp
 )
 
 target_link_libraries(playlist-manager

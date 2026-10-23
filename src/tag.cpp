@@ -1,5 +1,5 @@
 #include "tag.h"
-#include "logger.h"
+#include "utils/logger.h"
 #include <QByteArray>
 #include <QPixmap>
 #include <QString>
