@@ -179,8 +179,48 @@ void MainWindow::setup_views()
     ui->fileExplorer->setColumnHidden(3, true);
 }
 
+QVector<Song> MainWindow::scan_dir(const QDirListing& dir)
+{
+    QVector<Song> songs;
+    QSet<QString> new_exclusions;
+    for(const auto& item : dir)
+    {
+        // What should we do with symlinks eventually? Resolve them?
+        if(item.isSymLink())
+            continue;
+
+        // Skip item if it begins with a directory path we already opened
+        QString fp        = item.absoluteFilePath();
+        bool    skip_flag = false;
+        for(const QString& dirname : open_dirs)
+        {
+            if(fp.startsWith(dirname))
+            {
+                qDebug() << "fp: " << fp << "begins with dirname: " << dirname;
+                skip_flag = true;
+                break;
+            }
+        }
+        if(skip_flag)
+            continue;
+
+        if(item.isDir())
+        {
+            // Append a '/' to avoid potential false positives during exclusion
+            new_exclusions.insert(fp + "/");
+            continue;
+        }
+
+        auto song = path_to_song(fp);
+        if(song)
+            songs.push_back(*song);
+    }
+
+    open_dirs += new_exclusions;
+    return songs;
+}
+
 // Scan song files into Song structs and load into SongTableModel
-// TODO: Break down this function into smaller pieces?
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     QSettings s;
@@ -218,43 +258,8 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         open_dirs.clear();
 
     // Extract song metadata using TagLib before replacing/appending to table
-    QVector<Song> songs;
-    QSet<QString> new_exclusions;
-    for(const auto& item : dir)
-    {
-        // What should we do with symlinks eventually? Resolve them?
-        if(item.isSymLink())
-            continue;
-
-        // Skip item if it begins with a directory path we already opened
-        QString fp        = item.absoluteFilePath();
-        bool    skip_flag = false;
-        for(const QString& dirname : open_dirs)
-        {
-            if(fp.startsWith(dirname))
-            {
-                qDebug() << "fp: " << fp << "begins with dirname: " << dirname;
-                skip_flag = true;
-                break;
-            }
-        }
-        if(skip_flag)
-            continue;
-
-        if(item.isDir())
-        {
-            // Append a '/' to avoid potential false positives during exclusion
-            new_exclusions.insert(fp + "/");
-            continue;
-        }
-
-        auto song = path_to_song(fp);
-        if(song)
-            songs.push_back(*song);
-    }
-
+    auto songs = scan_dir(dir);
     open_dirs.insert(dirpath);
-    open_dirs += new_exclusions;
 
     logger::sb_log(ui->statusbar, QString("Loaded %1 song(s)").arg(songs.size()), LogLevel::Info);
 

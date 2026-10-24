@@ -50,11 +50,12 @@ private:
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString> open_dirs;
 
-    void setup_models();
-    void setup_views();
-    void load_dir_to_songviewer(const QString& dirpath);
-    void closeEvent(QCloseEvent* event) override;
-    void restore_window_settings();
-    void restore_menubar_settings();
+    void          setup_models();
+    void          setup_views();
+    QVector<Song> scan_dir(const QDirListing& dir);
+    void          load_dir_to_songviewer(const QString& dirpath);
+    void          closeEvent(QCloseEvent* event) override;
+    void          restore_window_settings();
+    void          restore_menubar_settings();
 };
 #endif // MAINWINDOW_H
