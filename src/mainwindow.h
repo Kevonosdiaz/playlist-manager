@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "songtablemodel.h"
+#include "media/songtablemodel.h"
 #include <QFileSystemModel>
 #include <QMainWindow>
 

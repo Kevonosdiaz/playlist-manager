@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include "tag.h"
+#include "media/tag.h"
 #include "ui_mainwindow.h"
 #include "utils/constants.h"
 #include "utils/logger.h"

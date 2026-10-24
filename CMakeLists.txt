@@ -17,11 +17,11 @@ qt_add_executable(playlist-manager
     src/mainwindow.cpp
     src/mainwindow.h
     src/mainwindow.ui
-    src/tag.h
-    src/tag.cpp
-    src/song.h
-    src/songtablemodel.h
-    src/songtablemodel.cpp
+    src/media/tag.h
+    src/media/tag.cpp
+    src/media/song.h
+    src/media/songtablemodel.h
+    src/media/songtablemodel.cpp
     src/utils/logger.h
     src/utils/logger.cpp
     src/utils/constants.h
