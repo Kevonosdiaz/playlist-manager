@@ -196,7 +196,6 @@ QVector<Song> MainWindow::scan_dir(const QDirListing& dir)
         {
             if(fp.startsWith(dirname))
             {
-                qDebug() << "fp: " << fp << "begins with dirname: " << dirname;
                 skip_flag = true;
                 break;
             }
@@ -245,7 +244,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 
     // Skip reopening if already opened/scanned dir
     // Note: does not prevent recursive scan from finding repeats; open_dirs handles those
-    if(open_dirs.contains(dirpath))
+    if(open_dirs.contains(dirpath + "/"))
     {
         logger::sb_log(
             ui->statusbar, u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
@@ -259,7 +258,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 
     // Extract song metadata using TagLib before replacing/appending to table
     auto songs = scan_dir(dir);
-    open_dirs.insert(dirpath);
+    open_dirs.insert(dirpath + "/");
 
     logger::sb_log(ui->statusbar, QString("Loaded %1 song(s)").arg(songs.size()), LogLevel::Info);
 
