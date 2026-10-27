@@ -22,6 +22,8 @@ qt_add_executable(playlist-manager
     src/media/song.h
     src/media/songtablemodel.h
     src/media/songtablemodel.cpp
+    src/media/playlist.h
+    src/media/playlist.cpp
     src/utils/logger.h
     src/utils/logger.cpp
     src/utils/constants.h
