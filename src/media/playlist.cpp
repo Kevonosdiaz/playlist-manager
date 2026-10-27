@@ -10,7 +10,18 @@ Playlist::Playlist(QString& filepath)
 {
     num_playlists++;
     name = QString("Playlist %1").arg(num_playlists);
+    // songs = parse_m3u(filepath);
     parse_m3u();
+}
+
+bool Playlist::empty() const
+{
+    return songs.empty();
+}
+
+const QVector<Song>& Playlist::get_songs() const
+{
+    return songs;
 }
 
 void Playlist::parse_m3u()
@@ -82,10 +93,17 @@ void Playlist::parse_m3u()
                 // Log unsupported directive, or comment
                 continue;
             }
+            else if(line.startsWith("http://") || line.startsWith("https://")
+                    || line.startsWith("rtsp://"))
+            {
+                // Log unsupported URI type
+                continue;
+            }
             else
             {
                 // Treat line as URI, add current song info to songs
-                s.path = line;
+                // TODO: Account for relative vs absolute path
+                s.url = QUrl(line);
                 songs.push_back(s);
                 s = {};
             }
@@ -96,6 +114,8 @@ void Playlist::parse_m3u()
         // Log out error to user
     }
 }
+
+// TODO: Add infrastructure to get absolute paths of URLs
 
 // Override data in Playlist.songs with TagLib provided metadata
 void Playlist::tag_all_songs()

@@ -65,8 +65,15 @@ void MainWindow::open_about_qt()
 void MainWindow::open_playlist_file_selector()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this, u"Open Playlist File"_s, QString(), u"M3U Media Playlist (*.m3u *.m3u8)"_s);
-    logger::log(filename, LogLevel::Debug);
+        this,
+        u"Open Playlist File"_s,
+        QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
+        u"M3U Media Playlist (*.m3u *.m3u8)"_s);
+    if(filename.isEmpty())
+        return;
+
+    playlists.emplace_back(Playlist{filename});
+    load_playlist_to_songviewer(playlists.back());
 }
 
 void MainWindow::open_music_dir_selector()
@@ -217,6 +224,17 @@ QVector<Song> MainWindow::scan_dir(const QDirListing& dir)
 
     open_dirs += new_exclusions;
     return songs;
+}
+
+// Pass along Songs in Playlist to load into SongTableModel
+void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
+{
+    // Exit if empty
+    if(pl.empty())
+        return;
+
+    song_model->set_songs(pl.get_songs());
+    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
 }
 
 // Scan song files into Song structs and load into SongTableModel

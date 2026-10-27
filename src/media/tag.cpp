@@ -53,12 +53,12 @@ std::optional<Song> path_to_song(const QString& filepath)
         return {};
     }
 
-    song.path         = filepath;
+    song.url          = QUrl{filepath};
     song.cover        = get_image_data(f);
     song.title        = QString(tag->title().toCString(true));
     song.artist       = QString(tag->artist().toCString(true));
     song.album        = QString(tag->album().toCString(true));
-    song.duration_sec = prop->lengthInSeconds();
+    song.duration_sec = static_cast<uint32_t>(prop->lengthInSeconds());
     song.track        = tag->track();
 
     return song;

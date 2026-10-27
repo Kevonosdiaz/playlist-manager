@@ -9,6 +9,8 @@ class Playlist
 {
 public:
     explicit Playlist(QString& filepath);
+    bool                 empty() const;
+    const QVector<Song>& get_songs() const;
 
 private:
     inline static uint32_t num_playlists = 0;

@@ -1,7 +1,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "media/playlist.h"
 #include "media/songtablemodel.h"
+
 #include <QFileSystemModel>
 #include <QMainWindow>
 
@@ -48,12 +50,14 @@ private:
     };
 
     // Track open dirs in song viewer (or dirs in append mode)
-    QSet<QString> open_dirs;
+    QSet<QString>   open_dirs;
+    QList<Playlist> playlists;
 
     void          setup_models();
     void          setup_views();
     QVector<Song> scan_dir(const QDirListing& dir);
     void          load_dir_to_songviewer(const QString& dirpath);
+    void          load_playlist_to_songviewer(const Playlist& pl);
     void          closeEvent(QCloseEvent* event) override;
     void          restore_window_settings();
     void          restore_menubar_settings();
