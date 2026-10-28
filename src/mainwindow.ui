@@ -33,6 +33,19 @@
       <widget class="QWidget" name="verticalLayoutWidget_2">
        <layout class="QVBoxLayout" name="rightMainContainer">
         <item>
+         <widget class="QLabel" name="songViewerLabel">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="margin">
+           <number>2</number>
+          </property>
+          <property name="indent">
+           <number>8</number>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QTableView" name="songViewer">
           <property name="iconSize">
            <size>

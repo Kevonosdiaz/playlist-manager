@@ -11,11 +11,12 @@ public:
     explicit Playlist(QString& filepath);
     bool                 empty() const;
     const QVector<Song>& get_songs() const;
+    const QString        get_name() const;
 
 private:
     inline static uint32_t num_playlists = 0;
     QString                fp;
-    std::optional<QString> name;
+    QString                name;
     bool                   is_ext = false;
     QVector<Song>          songs;
 

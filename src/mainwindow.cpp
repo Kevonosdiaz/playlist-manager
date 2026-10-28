@@ -6,6 +6,7 @@
 
 #include <QDirListing>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFileSystemModel>
 #include <QHeaderView>
 #include <QSettings>
@@ -235,6 +236,7 @@ void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
 
     song_model->set_songs(pl.get_songs());
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
+    ui->songViewerLabel->setText(pl.get_name());
 }
 
 // Scan song files into Song structs and load into SongTableModel
@@ -285,6 +287,8 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     else
         song_model->set_songs(std::move(songs));
     ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
+    QFileInfo fi(dirpath);
+    ui->songViewerLabel->setText(fi.baseName());
 }
 
 // Save window geometry and app state on app close

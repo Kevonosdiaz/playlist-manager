@@ -1,6 +1,7 @@
 #include "playlist.h"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
@@ -9,8 +10,9 @@ Playlist::Playlist(QString& filepath)
     : fp(filepath)
 {
     num_playlists++;
-    name = QString("Playlist %1").arg(num_playlists);
-    // songs = parse_m3u(filepath);
+    // name = QString("Playlist %1").arg(num_playlists);
+    QFileInfo fi(filepath);
+    name = fi.baseName();
     parse_m3u();
 }
 
@@ -22,6 +24,11 @@ bool Playlist::empty() const
 const QVector<Song>& Playlist::get_songs() const
 {
     return songs;
+}
+
+const QString Playlist::get_name() const
+{
+    return name;
 }
 
 void Playlist::parse_m3u()
