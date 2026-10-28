@@ -44,7 +44,8 @@ std::optional<Song> path_to_song(const QString& filepath)
 
     Song song;
 
-    const TagLib::Tag*             tag  = f.tag();
+    const TagLib::Tag* tag = f.tag();
+    // NOTE: ReadStyle can be set for AudioProperties for speed/accuracy adjustment
     const TagLib::AudioProperties* prop = f.audioProperties();
 
     if(!tag || !prop)
@@ -53,7 +54,7 @@ std::optional<Song> path_to_song(const QString& filepath)
         return {};
     }
 
-    song.url          = QUrl{filepath};
+    song.path         = filepath;
     song.cover        = get_image_data(f);
     song.title        = QString(tag->title().toCString(true));
     song.artist       = QString(tag->artist().toCString(true));

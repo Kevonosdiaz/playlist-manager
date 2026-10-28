@@ -8,7 +8,7 @@
 class Playlist
 {
 public:
-    explicit Playlist(QString& filepath);
+    explicit Playlist(const QString& filepath);
     bool                 empty() const;
     const QVector<Song>& get_songs() const;
     const QString        get_name() const;
