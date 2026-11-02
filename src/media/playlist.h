@@ -11,7 +11,7 @@ public:
     explicit Playlist(const QString& filepath);
     bool                 empty() const;
     const QVector<Song>& get_songs() const;
-    const QString        get_name() const;
+    QString              get_name() const;
 
 private:
     inline static uint32_t num_playlists = 0;

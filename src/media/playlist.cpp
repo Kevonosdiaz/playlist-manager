@@ -33,7 +33,7 @@ const QVector<Song>& Playlist::get_songs() const
     return songs;
 }
 
-const QString Playlist::get_name() const
+QString Playlist::get_name() const
 {
     return name;
 }
@@ -90,6 +90,7 @@ void Playlist::parse_m3u()
                 s.duration_sec = line.sliced(colon_pos + 1, comma_pos - colon_pos - 1).toUInt();
                 // NOTE: remainder may contain extraneous information for other properties besides artist and title
                 QString remainder = line.sliced(comma_pos + 1);
+
                 // Attempt to split by Artist - Title, other just Title
                 auto hyphen_pos = remainder.indexOf('-');
                 if(hyphen_pos != -1 && remainder.contains(u" - "_s))
