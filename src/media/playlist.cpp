@@ -106,12 +106,14 @@ void Playlist::parse_m3u()
             else if(line.startsWith(u"#"_s))
             {
                 // Log unsupported directive, or comment
+                s = {};
                 continue;
             }
             else if(line.startsWith(u"http://"_s) || line.startsWith(u"https://"_s)
                     || line.startsWith(u"rtsp://"_s))
             {
                 // Log unsupported URI type
+                s = {};
                 continue;
             }
             else
