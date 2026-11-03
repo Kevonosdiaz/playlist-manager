@@ -35,19 +35,6 @@ private:
     Ui::MainWindow*   ui;
     SongTableModel*   song_model;
     QFileSystemModel* fs_model;
-    const QStringList VALID_FILETYPES{
-        "*.mp3",
-        "*.ogg",
-        "*.oga",
-        "*.opus",
-        "*.flac",
-        "*.m4a",
-        "*.mp4",
-        "*.aac",
-        "*.wav",
-        "*.wave",
-        "*.wv",
-    };
 
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString>   open_dirs;

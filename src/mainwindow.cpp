@@ -155,7 +155,7 @@ void MainWindow::setup_models()
         default_dir = QDir::homePath();
     }
     QString dir = s.value("files/fileExplorerRoot", default_dir).toString();
-    fs_model    = new QFileSystemModel(ui->fileExplorer);
+    fs_model    = new QFileSystemModel(this);
     fs_model->setRootPath(dir);
     fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
 }
