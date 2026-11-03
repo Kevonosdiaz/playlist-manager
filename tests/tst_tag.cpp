@@ -132,9 +132,6 @@ private slots:
 
         const auto song = path_to_song(p);
         QVERIFY(song.has_value());
-        QEXPECT_FAIL("",
-                     "setScaledSize(ART_SIZE x ART_SIZE) stretches non-square art to a square",
-                     Abort);
         QCOMPARE(song->cover.size(), QSize(ART_SIZE, ART_SIZE / 2));
     }
 

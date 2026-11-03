@@ -3,9 +3,10 @@
 
 #include <QStringList>
 
-inline constexpr int ART_SIZE = 64;
+inline constexpr int ART_SIZE         = 64;
+inline constexpr int MAX_COLUMN_CHARS = 30;
 
-const QStringList VALID_FILETYPES{
+inline const QStringList VALID_FILETYPES{
     "*.mp3",
     "*.ogg",
     "*.oga",

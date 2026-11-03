@@ -45,6 +45,7 @@ private:
     QVector<Song> scan_dir(const QDirListing& dir);
     void          load_dir_to_songviewer(const QString& dirpath);
     void          load_playlist_to_songviewer(const Playlist& pl);
+    void          fit_song_columns_to_contents();
     void          closeEvent(QCloseEvent* event) override;
     void          restore_window_settings();
     void          restore_menubar_settings();

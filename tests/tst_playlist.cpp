@@ -117,9 +117,16 @@ private slots:
 
     void blank_lines_are_skipped()
     {
-        auto pl = make_playlist("one.mp3\n\ntwo.mp3\n\n");
-        QEXPECT_FAIL("", "Review #4: blank lines are added as songs with an empty path", Abort);
+        // Includes a whitespace-only line, which must be treated the same as an empty one
+        auto pl = make_playlist("one.mp3\n\n   \t\ntwo.mp3\n\n");
         QCOMPARE(paths(pl), (QStringList{u"one.mp3"_s, u"two.mp3"_s}));
+    }
+
+    void blank_line_between_extinf_and_path_keeps_metadata()
+    {
+        auto pl = make_playlist("#EXTM3U\n#EXTINF:10,Artist - Title\n\none.mp3\n");
+        QCOMPARE(paths(pl), QStringList{u"one.mp3"_s});
+        QCOMPARE(pl.get_songs().first().title, u"Title"_s);
     }
 
     // --- Extended M3U (#EXTINF) ---------------------------------------------------
@@ -220,8 +227,8 @@ private slots:
                                 "#EXTALB:Some Album\n"
                                 "one.mp3\n");
         QCOMPARE(paths(pl), QStringList{u"one.mp3"_s});
-        QEXPECT_FAIL("", "Review #6: any other '#' line discards the pending #EXTINF data", Abort);
         QCOMPARE(pl.get_songs().first().title, u"Title"_s);
+        QCOMPARE(pl.get_songs().first().duration_sec, 10u);
     }
 
     // Not tested: "#EXTINF,x:y" (comma before colon). It currently hits a negative

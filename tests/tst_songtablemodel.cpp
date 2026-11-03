@@ -155,7 +155,20 @@ private slots:
     {
         SongTableModel m;
         m.set_songs({make_song(u"x"_s)});
-        QVERIFY(!m.index(0, Col::Title).data(Qt::ToolTipRole).isValid());
+        QVERIFY(!m.index(0, Col::Title).data(Qt::WhatsThisRole).isValid());
+    }
+
+    void tooltip_shows_full_text_for_text_columns()
+    {
+        SongTableModel m;
+        const QString  long_title(300, u'x');
+        m.set_songs({make_song(long_title, u"Artist"_s, u"Album"_s, 60, 1)});
+
+        QCOMPARE(m.index(0, Col::Title).data(Qt::ToolTipRole).toString(), long_title);
+        QCOMPARE(m.index(0, Col::Artist).data(Qt::ToolTipRole).toString(), u"Artist"_s);
+        QCOMPARE(m.index(0, Col::Album).data(Qt::ToolTipRole).toString(), u"Album"_s);
+        QVERIFY(!m.index(0, Col::Length).data(Qt::ToolTipRole).isValid());
+        QVERIFY(!m.index(0, Col::AlbumArt).data(Qt::ToolTipRole).isValid());
     }
 
     // --- set_songs / add_songs ---------------------------------------------------

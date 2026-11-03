@@ -14,6 +14,8 @@
 #include <QTableView>
 #include <QTreeView>
 
+#include <algorithm>
+
 // Allow ""_s operator on string literals for compile time QString construction
 using namespace Qt::StringLiterals;
 
@@ -167,14 +169,19 @@ void MainWindow::setup_views()
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
     ui->songViewer->setModel(song_model);
 
-    // Fix row height based on album art size and resize columns dynamically
+    // Fix row height based on album art size, let non art columns be resized
     ui->songViewer->verticalHeader()->setDefaultSectionSize(ART_SIZE + 8);
-    ui->songViewer->horizontalHeader()->setMinimumSectionSize(30);
-    ui->songViewer->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    ui->songViewer->horizontalHeader()->setStretchLastSection(true);
-    ui->songViewer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
     ui->songViewer->setSortingEnabled(true);
-    ui->songViewer->horizontalHeader()->setSortIndicatorShown(true);
+    auto* hh = ui->songViewer->horizontalHeader();
+    hh->setMinimumSectionSize(30);
+    hh->setSectionResizeMode(QHeaderView::Interactive);
+    hh->setSectionResizeMode(SongTableModel::AlbumArt, QHeaderView::Fixed);
+    hh->setSectionResizeMode(SongTableModel::Title, QHeaderView::Stretch);
+    hh->resizeSection(SongTableModel::AlbumArt, ART_SIZE + 8);
+
+    hh->setDefaultAlignment(Qt::AlignLeft);
+    hh->setSortIndicatorShown(true);
+    ui->songViewer->setWordWrap(false);
 
     // Setup file explorer (QTreeView)
     ui->fileExplorer->setModel(fs_model);
@@ -235,7 +242,8 @@ void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
         return;
 
     song_model->set_songs(pl.get_songs());
-    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
+    ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
+    fit_song_columns_to_contents();
     ui->songViewerLabel->setText(pl.get_name());
 }
 
@@ -286,9 +294,30 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         song_model->add_songs(std::move(songs));
     else
         song_model->set_songs(std::move(songs));
-    ui->songViewer->sortByColumn(1, Qt::AscendingOrder);
+    ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
+    fit_song_columns_to_contents();
     QFileInfo fi(dirpath);
     ui->songViewerLabel->setText(fi.baseName());
+}
+
+// Resize columns based on text content, up to a max cap
+void MainWindow::fit_song_columns_to_contents()
+{
+    auto*              hh = ui->songViewer->horizontalHeader();
+    const QFontMetrics fm = ui->songViewer->fontMetrics();
+    // Measure out the advance of MAX_COLUMN_CHARS copies of 'M'
+    const int max_cap = fm.horizontalAdvance(QString(MAX_COLUMN_CHARS, u'M'));
+
+    // Skip title since it stretches to fill
+    for(int col : {SongTableModel::Artist,
+                   SongTableModel::Album,
+                   SongTableModel::Length,
+                   SongTableModel::Track})
+    {
+        ui->songViewer->resizeColumnToContents(col);
+        const int width = hh->sectionSize(col);
+        hh->resizeSection(col, std::min(width, max_cap));
+    }
 }
 
 // Save window geometry and app state on app close

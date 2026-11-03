@@ -60,6 +60,19 @@ QVariant SongTableModel::data(const QModelIndex& idx, int role) const
         default:
             return QVariant{};
         }
+    case Qt::ToolTipRole:
+        // Full text on hover, since long values are elided in capped-width columns
+        switch(col)
+        {
+        case Title:
+            return song.title;
+        case Artist:
+            return song.artist;
+        case Album:
+            return song.album;
+        default:
+            return QVariant{};
+        }
     }
 
     return QVariant{};
