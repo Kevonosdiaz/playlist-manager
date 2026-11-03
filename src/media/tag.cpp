@@ -35,7 +35,7 @@ namespace
         // Load in image data, scaled down to icon size
         TagLib::ByteVector img_data = cover_pic["data"].value<TagLib::ByteVector>();
         QImageReader       reader;
-        QByteArray         qba{img_data.data(), img_data.size()};
+        QByteArray         qba = QByteArray::fromRawData(img_data.data(), img_data.size());
         QBuffer            buf(&qba);
         buf.open(QIODevice::ReadOnly);
         reader.setDevice(&buf);

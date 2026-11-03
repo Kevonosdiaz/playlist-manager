@@ -132,6 +132,6 @@ void SongTableModel::add_songs(QVector<Song> other_songs)
     int first = static_cast<int>(songs.size());
     int last  = static_cast<int>(other_songs.size()) + first - 1;
     beginInsertRows(QModelIndex(), first, last);
-    songs += other_songs;
+    songs.append(std::move(other_songs));
     endInsertRows();
 }

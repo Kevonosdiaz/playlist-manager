@@ -74,7 +74,6 @@ void Playlist::parse_m3u()
             if(line.startsWith(u"#"_s) && !is_ext)
             {
                 // Log out info that # was found without beginning extension
-                // Could be due to added byte order mark or other data causing #EXTM3U to not show at start of first line?
                 continue;
             }
             else if(line.startsWith(u"#EXTINF"_s))
@@ -91,7 +90,7 @@ void Playlist::parse_m3u()
                 // NOTE: remainder may contain extraneous information for other properties besides artist and title
                 QString remainder = line.sliced(comma_pos + 1);
 
-                // Attempt to split by Artist - Title, other just Title
+                // Attempt to split by Artist - Title, otherwise just Title
                 auto hyphen_pos = remainder.indexOf('-');
                 if(hyphen_pos != -1 && remainder.contains(u" - "_s))
                 {
@@ -107,7 +106,6 @@ void Playlist::parse_m3u()
             else if(line.startsWith(u"#"_s))
             {
                 // Log unsupported directive, or comment
-                s = {};
                 continue;
             }
             else if(line.startsWith(u"http://"_s) || line.startsWith(u"https://"_s)
@@ -120,7 +118,11 @@ void Playlist::parse_m3u()
             else
             {
                 // Treat entire line as file path, add current song info to songs
-                s.path = line.trimmed();
+                const auto l = line.trimmed();
+                if(l.isEmpty())
+                    continue;
+
+                s.path = l;
                 songs.push_back(s);
                 s = {};
             }

@@ -73,7 +73,7 @@ void MainWindow::open_playlist_file_selector()
     if(filename.isEmpty())
         return;
 
-    playlists.emplace_back(Playlist{filename});
+    playlists.emplace_back(filename);
     load_playlist_to_songviewer(playlists.back());
 }
 
