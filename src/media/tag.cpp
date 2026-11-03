@@ -39,7 +39,8 @@ namespace
         QBuffer            buf(&qba);
         buf.open(QIODevice::ReadOnly);
         reader.setDevice(&buf);
-        reader.setScaledSize(QSize(ART_SIZE, ART_SIZE));
+        reader.setScaledSize(QSize(ART_SIZE, ART_SIZE)
+                                 .scaled(ART_SIZE, ART_SIZE, Qt::AspectRatioMode::KeepAspectRatio));
         res = reader.read();
 
         if(res.isNull())
