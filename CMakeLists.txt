@@ -5,18 +5,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Widgets)
+option(PLAYLIST_MANAGER_BUILD_TESTS "Build the Qt Test unit tests" ON)
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(TagLib REQUIRED)
 
 set(CMAKE_AUTOUIC ON)
 qt_standard_project_setup()
 
-qt_add_executable(playlist-manager
-    WIN32 MACOSX_BUNDLE
-    src/main.cpp
-    src/mainwindow.cpp
-    src/mainwindow.h
-    src/mainwindow.ui
+set(PLAYLIST_MANAGER_WARNING_FLAGS
+    -Wall -Wextra -Werror -Wconversion -Wshadow -Wpedantic -Wno-missing-field-initializers)
+
+# Non-UI logic (parsing, tagging, models) lives in a static library so the
+# application and the unit tests link the same compiled code.
+qt_add_library(playlist-manager-core STATIC
     src/media/tag.h
     src/media/tag.cpp
     src/media/song.h
@@ -28,15 +30,36 @@ qt_add_executable(playlist-manager
     src/utils/logger.cpp
     src/utils/constants.h
 )
-
-target_link_libraries(playlist-manager
-    PRIVATE
+target_include_directories(playlist-manager-core PUBLIC src)
+target_link_libraries(playlist-manager-core
+    PUBLIC
         Qt::Core
+        Qt::Gui
         Qt::Widgets
         TagLib::tag
 )
+target_compile_options(playlist-manager-core PRIVATE ${PLAYLIST_MANAGER_WARNING_FLAGS})
 
-target_compile_options(playlist-manager PRIVATE -Wall -Wextra -Werror -Wconversion -Wshadow -Wpedantic -Wno-missing-field-initializers)
+qt_add_executable(playlist-manager
+    WIN32 MACOSX_BUNDLE
+    src/main.cpp
+    src/mainwindow.cpp
+    src/mainwindow.h
+    src/mainwindow.ui
+)
+
+target_link_libraries(playlist-manager
+    PRIVATE
+        playlist-manager-core
+        Qt::Widgets
+)
+
+target_compile_options(playlist-manager PRIVATE ${PLAYLIST_MANAGER_WARNING_FLAGS})
+
+if(PLAYLIST_MANAGER_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 install(TARGETS playlist-manager
     BUNDLE  DESTINATION .
