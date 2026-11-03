@@ -4,11 +4,10 @@
 #include <QPixmap>
 #include <QString>
 
-// Consider replacing QPixmap in the future for an alternative
 struct Song
 {
     QString  title, artist, album, path;
-    QPixmap  cover;
+    QImage   cover;
     uint32_t duration_sec = 0;
     uint32_t track        = 0;
 };

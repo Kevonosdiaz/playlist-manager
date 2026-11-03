@@ -42,7 +42,7 @@ QVariant SongTableModel::data(const QModelIndex& idx, int role) const
     {
     case Qt::DecorationRole:
         if(col == AlbumArt && !song.cover.isNull())
-            return QIcon(song.cover);
+            return song.cover;
         return {};
     case Qt::DisplayRole:
         switch(col)

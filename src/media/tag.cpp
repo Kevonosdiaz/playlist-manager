@@ -1,6 +1,9 @@
 #include "tag.h"
+#include "../utils/constants.h"
 #include "../utils/logger.h"
+#include <QBuffer>
 #include <QByteArray>
+#include <QImageReader>
 #include <QPixmap>
 #include <QString>
 #include <taglib/fileref.h>
@@ -9,13 +12,14 @@ namespace
 {
 
     // Retrieves embedded album art from file using TagLib
-    QPixmap get_image_data(const TagLib::FileRef& f)
+    QImage get_image_data(const TagLib::FileRef& f)
     {
-        QPixmap                          res;
+        QImage                           res;
         TagLib::List<TagLib::VariantMap> pictures = f.complexProperties("PICTURE");
         if(pictures.isEmpty())
             return res;
         TagLib::VariantMap cover_pic;
+        // TODO: Check for other types of pictures as fallback
         for(const auto& pic : pictures)
         {
             if(pic["pictureType"].value<TagLib::String>() == "Front Cover")
@@ -27,10 +31,25 @@ namespace
         if(cover_pic.isEmpty())
             return res;
 
-        // Load in image data to QPixmap
+        // TODO: Do we need to scale ART_SIZE by monitor scaling?
+        // Load in image data, scaled down to icon size
         TagLib::ByteVector img_data = cover_pic["data"].value<TagLib::ByteVector>();
+        QImageReader       reader;
         QByteArray         qba{img_data.data(), img_data.size()};
-        res.loadFromData(qba);
+        QBuffer            buf(&qba);
+        buf.open(QIODevice::ReadOnly);
+        reader.setDevice(&buf);
+        reader.setScaledSize(QSize(ART_SIZE, ART_SIZE));
+        res = reader.read();
+
+        if(res.isNull())
+        {
+            logger::log(
+                QString("Encountered error when fetching album art: %1").arg(reader.errorString()),
+                LogLevel::Info);
+            return {};
+        }
+
         return res;
     }
 }
@@ -44,8 +63,7 @@ std::optional<Song> path_to_song(const QString& filepath)
 
     Song song;
 
-    const TagLib::Tag* tag = f.tag();
-    // NOTE: ReadStyle can be set for AudioProperties for speed/accuracy adjustment
+    const TagLib::Tag*             tag  = f.tag();
     const TagLib::AudioProperties* prop = f.audioProperties();
 
     if(!tag || !prop)
