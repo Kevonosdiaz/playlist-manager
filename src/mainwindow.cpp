@@ -127,6 +127,9 @@ void MainWindow::toggle_recursive_directory_scan()
     bool      new_val = !s.value(u"files/useRecursiveScan"_s, false).toBool();
     s.setValue(u"files/useRecursiveScan"_s, new_val);
     ui->actionToggleRecursiveDirectoryScan->setChecked(new_val);
+
+    if(!ui->actionToggleAppendDirectoryScan->isChecked())
+        open_dirs.clear();
 }
 
 // Toggle setting to append song files to song viewer
@@ -245,6 +248,7 @@ void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
     ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
     fit_song_columns_to_contents();
     ui->songViewerLabel->setText(pl.get_name());
+    open_dirs.clear();
 }
 
 // Scan song files into Song structs and load into SongTableModel
