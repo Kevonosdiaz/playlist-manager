@@ -8,11 +8,13 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemModel>
+#include <QFutureWatcher>
 #include <QHeaderView>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTableView>
 #include <QTreeView>
+#include <QtConcurrentMap>
 
 #include <algorithm>
 
@@ -49,6 +51,39 @@ MainWindow::MainWindow(QWidget* parent)
             this,
             &MainWindow::toggle_appending_directory_scan);
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
+
+    // Hook up watcher to concurrent song tagging incoming results
+    connect(&tag_fwatcher,
+            &QFutureWatcher<std::optional<Song>>::resultsReadyAt,
+            this,
+            [this](int begin, int end) {
+                QVector<Song> batch;
+                for(int i = begin; i < end; i++)
+                {
+                    if(auto s = tag_fwatcher.resultAt(i))
+                        batch.push_back(std::move(*s));
+                }
+                song_model->add_songs(std::move(batch));
+            });
+    connect(&tag_fwatcher, &QFutureWatcher<std::optional<Song>>::finished, this, [this]() {
+        // Run next directory (if added with append mode)
+        if(!pending_tag_scans.empty())
+        {
+            logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
+            tag_list(pending_tag_scans.dequeue());
+            return;
+        }
+
+        if(tag_fwatcher.isCanceled())
+            return;
+
+        // Sort, resize cols, etc.
+        ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
+        fit_song_columns_to_contents();
+        logger::sb_log(ui->statusbar,
+                       QString("Loaded %1 song(s)").arg(song_model->rowCount()),
+                       LogLevel::Info);
+    });
 
     // Restore state from QSettings
     restore_window_settings();
@@ -197,9 +232,16 @@ void MainWindow::setup_views()
     ui->fileExplorer->setColumnHidden(3, true);
 }
 
-QVector<Song> MainWindow::scan_dir(const QDirListing& dir)
+// Concurrently tag song at each path in paths
+void MainWindow::tag_list(QStringList paths)
 {
-    QVector<Song> songs;
+    // Connected slot will add scanned songs to song_model
+    tag_fwatcher.setFuture(QtConcurrent::mapped(std::move(paths), path_to_song));
+}
+
+QStringList MainWindow::scan_dir(const QDirListing& dir)
+{
+    QStringList   song_paths;
     QSet<QString> new_exclusions;
     for(const auto& item : dir)
     {
@@ -228,27 +270,11 @@ QVector<Song> MainWindow::scan_dir(const QDirListing& dir)
             continue;
         }
 
-        auto song = path_to_song(fp);
-        if(song)
-            songs.push_back(*song);
+        song_paths.push_back(std::move(fp));
     }
 
     open_dirs += new_exclusions;
-    return songs;
-}
-
-// Pass along Songs in Playlist to load into SongTableModel
-void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
-{
-    // Exit if empty
-    if(pl.empty())
-        return;
-
-    song_model->set_songs(pl.get_songs());
-    ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
-    fit_song_columns_to_contents();
-    ui->songViewerLabel->setText(pl.get_name());
-    open_dirs.clear();
+    return song_paths;
 }
 
 // Scan song files into Song structs and load into SongTableModel
@@ -284,24 +310,47 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         return;
     }
 
-    // If not in append mode we only consider one directory open at a time, so clear old paths
+    // If not in append mode we only consider one directory open at a time, so clear old paths from in-progress scans and from open_dirs
     if(!append_mode)
+    {
+        pending_tag_scans.clear();
+        tag_fwatcher.cancel();
+        song_model->set_songs({});
         open_dirs.clear();
+    }
 
     // Extract song metadata using TagLib before replacing/appending to table
-    auto songs = scan_dir(dir);
+    QStringList song_paths = scan_dir(dir);
     open_dirs.insert(dirpath + "/");
 
-    logger::sb_log(ui->statusbar, QString("Loaded %1 song(s)").arg(songs.size()), LogLevel::Info);
-
-    if(append_mode)
-        song_model->add_songs(std::move(songs));
+    // Enqueue current dir if another dir is currently being tagged, else tag immediately
+    if(append_mode && tag_fwatcher.isRunning())
+        pending_tag_scans.enqueue(std::move(song_paths));
     else
-        song_model->set_songs(std::move(songs));
-    ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
-    fit_song_columns_to_contents();
+    {
+        logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
+        tag_list(std::move(song_paths));
+    }
+
     QFileInfo fi(dirpath);
     ui->songViewerLabel->setText(fi.baseName());
+}
+
+// Pass along Songs in Playlist to load into SongTableModel
+void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
+{
+    // Exit if empty
+    if(pl.empty())
+        return;
+
+    pending_tag_scans.clear();
+    tag_fwatcher.cancel();
+    open_dirs.clear();
+
+    song_model->set_songs(pl.get_songs());
+    ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
+    fit_song_columns_to_contents();
+    ui->songViewerLabel->setText(pl.get_name());
 }
 
 // Resize columns based on text content, up to a max cap
