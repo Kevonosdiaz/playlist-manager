@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QString>
 #include <taglib/fileref.h>
+#include <utility>
 
 namespace
 {
@@ -20,7 +21,7 @@ namespace
             return res;
         TagLib::VariantMap cover_pic;
         // TODO: Check for other types of pictures as fallback
-        for(const auto& pic : pictures)
+        for(const auto& pic : std::as_const(pictures))
         {
             if(pic["pictureType"].value<TagLib::String>() == "Front Cover")
             {

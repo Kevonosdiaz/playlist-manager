@@ -17,6 +17,7 @@
 #include <QtConcurrentMap>
 
 #include <algorithm>
+#include <utility>
 
 // Allow ""_s operator on string literals for compile time QString construction
 using namespace Qt::StringLiterals;
@@ -253,7 +254,7 @@ QStringList MainWindow::scan_dir(const QDirListing& dir)
         // Skip item if it begins with a directory path we already opened
         QString fp        = item.absoluteFilePath();
         bool    skip_flag = false;
-        for(const QString& dirname : open_dirs)
+        for(const QString& dirname : std::as_const(open_dirs))
         {
             if(fp.startsWith(dirname))
             {

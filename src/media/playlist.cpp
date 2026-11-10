@@ -9,6 +9,8 @@
 #include <QStringList>
 #include <QTextStream>
 
+#include <utility>
+
 using namespace Qt::StringLiterals;
 
 Playlist::Playlist(const QString& filepath)
@@ -67,7 +69,7 @@ void Playlist::parse_m3u()
 
         Song s;
 
-        for(const auto& line : lines)
+        for(const auto& line : std::as_const(lines))
         {
             // #EXTINF:123,Artist Name – Track Title\n
             // artist - title.mp3
