@@ -29,6 +29,8 @@ qt_add_library(playlist-manager-core STATIC
     src/utils/logger.h
     src/utils/logger.cpp
     src/utils/constants.h
+    src/utils/tooltiplabel.h
+    src/utils/tooltiplabel.cpp
 )
 target_include_directories(playlist-manager-core PUBLIC src)
 target_link_libraries(playlist-manager-core

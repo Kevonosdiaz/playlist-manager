@@ -80,8 +80,9 @@ MainWindow::MainWindow(QWidget* parent)
         // Sort, resize cols, etc.
         ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
         fit_song_columns_to_contents();
+        auto curr_song_count = song_model->rowCount();
         logger::sb_log(ui->statusbar,
-                       QString("Loaded %1 song(s)").arg(song_model->rowCount()),
+                       QString("Loaded %1 song(s)").arg(curr_song_count - prev_song_count),
                        LogLevel::Info);
     });
 
@@ -310,13 +311,15 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         return;
     }
 
-    // If not in append mode we only consider one directory open at a time, so clear old paths from in-progress scans and from open_dirs
-    if(!append_mode)
+    // If not in append mode we only consider one directory open at a time, so clear old paths from in-progress scans/open_dirs
+    // Also clear is open_dirs.empty() to catch playlist -> dir transition in append mode
+    if(!append_mode || open_dirs.empty())
     {
         pending_tag_scans.clear();
         tag_fwatcher.cancel();
         song_model->set_songs({});
         open_dirs.clear();
+        ui->songViewerLabel->setText({});
     }
 
     // Extract song metadata using TagLib before replacing/appending to table
@@ -329,11 +332,16 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     else
     {
         logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
+        prev_song_count = song_model->rowCount();
         tag_list(std::move(song_paths));
     }
 
-    QFileInfo fi(dirpath);
-    ui->songViewerLabel->setText(fi.baseName());
+    QFileInfo     fi(dirpath);
+    const QString text = ui->songViewerLabel->text();
+    if(text.isEmpty())
+        ui->songViewerLabel->setText(fi.fileName());
+    else
+        ui->songViewerLabel->setText(text + u", "_s + fi.fileName());
 }
 
 // Pass along Songs in Playlist to load into SongTableModel

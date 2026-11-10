@@ -41,6 +41,9 @@ private:
     QFileSystemModel*                   fs_model;
     QFutureWatcher<std::optional<Song>> tag_fwatcher;
 
+    // Used to get diff for # of new songs added
+    int prev_song_count = 0;
+
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString>       open_dirs;
     QList<Playlist>     playlists;

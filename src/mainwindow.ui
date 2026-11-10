@@ -33,7 +33,7 @@
       <widget class="QWidget" name="verticalLayoutWidget_2">
        <layout class="QVBoxLayout" name="rightMainContainer">
         <item>
-         <widget class="QLabel" name="songViewerLabel">
+         <widget class="ToolTipLabel" name="songViewerLabel">
           <property name="text">
            <string/>
           </property>
@@ -133,6 +133,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ToolTipLabel</class>
+   <extends>QLabel</extends>
+   <header>utils/tooltiplabel.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
