@@ -11,6 +11,8 @@
 #include <QFutureWatcher>
 #include <QHeaderView>
 #include <QSettings>
+#include <QStandardItem>
+#include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTableView>
 #include <QTreeView>
@@ -219,6 +221,9 @@ void MainWindow::toggle_appending_directory_scan()
 // Initialize data models and configure properties
 void MainWindow::setup_models()
 {
+    // Initialize playlist QListView
+    playlist_model = new QStandardItemModel(this);
+
     // Initialize song viewer QTableView headers
     song_model = new SongTableModel(this);
 
@@ -238,6 +243,9 @@ void MainWindow::setup_models()
 // Set models for views + configure view properties
 void MainWindow::setup_views()
 {
+    // Setup playlist viewer (QListView)
+    ui->playlistList->setModel(playlist_model);
+
     // Setup song viewer (QTableView)
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
     ui->songViewer->setModel(song_model);

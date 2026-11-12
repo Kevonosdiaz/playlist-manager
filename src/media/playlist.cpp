@@ -45,6 +45,16 @@ QString Playlist::get_name() const
     return name;
 }
 
+QString Playlist::get_path() const
+{
+    return fp;
+}
+
+size_t Playlist::size() const
+{
+    return static_cast<size_t>(songs.size());
+}
+
 void Playlist::parse_m3u()
 {
     QFile       f(fp);

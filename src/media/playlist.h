@@ -15,7 +15,9 @@ public:
     const QVector<Song>& get_songs() const;
     void                 set_songs(QVector<Song> other);
     QString              get_name() const;
+    QString              get_path() const;
     QFuture<Song>        tag_all_songs() const;
+    size_t               size() const;
 
 private:
     inline static uint32_t num_playlists = 0;

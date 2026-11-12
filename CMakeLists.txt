@@ -26,6 +26,8 @@ qt_add_library(playlist-manager-core STATIC
     src/media/songtablemodel.cpp
     src/media/playlist.h
     src/media/playlist.cpp
+    src/media/playlistmodel.h
+    src/media/playlistmodel.cpp
     src/utils/logger.h
     src/utils/logger.cpp
     src/utils/constants.h

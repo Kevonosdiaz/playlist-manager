@@ -8,6 +8,7 @@
 #include <QFutureWatcher>
 #include <QMainWindow>
 #include <QQueue>
+#include <QStandardItemModel>
 
 #include <optional>
 
@@ -36,9 +37,10 @@ private slots:
     void toggle_appending_directory_scan();
 
 private:
-    Ui::MainWindow*   ui;
-    SongTableModel*   song_model;
-    QFileSystemModel* fs_model;
+    Ui::MainWindow*     ui;
+    QStandardItemModel* playlist_model;
+    SongTableModel*     song_model;
+    QFileSystemModel*   fs_model;
 
     QFutureWatcher<std::optional<Song>> tag_fwatcher;
     // Used to get diff for # of new songs added
