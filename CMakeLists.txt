@@ -38,6 +38,7 @@ target_link_libraries(playlist-manager-core
         Qt::Core
         Qt::Gui
         Qt::Widgets
+        Qt::Concurrent
         TagLib::tag
 )
 target_compile_options(playlist-manager-core PRIVATE ${PLAYLIST_MANAGER_WARNING_FLAGS})

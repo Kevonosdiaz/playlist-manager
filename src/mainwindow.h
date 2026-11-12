@@ -36,13 +36,18 @@ private slots:
     void toggle_appending_directory_scan();
 
 private:
-    Ui::MainWindow*                     ui;
-    SongTableModel*                     song_model;
-    QFileSystemModel*                   fs_model;
-    QFutureWatcher<std::optional<Song>> tag_fwatcher;
+    Ui::MainWindow*   ui;
+    SongTableModel*   song_model;
+    QFileSystemModel* fs_model;
 
+    QFutureWatcher<std::optional<Song>> tag_fwatcher;
     // Used to get diff for # of new songs added
     int prev_song_count = 0;
+
+    QFutureWatcher<Song> playlist_fwatcher;
+    // Values to handle open two playlists simultaneously
+    std::optional<Playlist> pending_playlist;
+    std::optional<QString>  next_pl_path;
 
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString>       open_dirs;
@@ -52,6 +57,7 @@ private:
     void        setup_models();
     void        setup_views();
     void        tag_list(QStringList paths);
+    void        tag_playlist(const QString& path);
     QStringList scan_dir(const QDirListing& dir);
     void        load_dir_to_songviewer(const QString& dirpath);
     void        load_playlist_to_songviewer(const Playlist& pl);

@@ -87,6 +87,32 @@ MainWindow::MainWindow(QWidget* parent)
                        LogLevel::Info);
     });
 
+    // Watcher for handling concurrent playlist tagging
+    connect(&playlist_fwatcher, &QFutureWatcher<Song>::finished, this, [this]() {
+        // If another playlist was opened by user, skip loading this playlist
+        auto pl = std::exchange(pending_playlist, std::nullopt);
+        if(next_pl_path)
+        {
+            tag_playlist(*std::exchange(next_pl_path, std::nullopt));
+            return;
+        }
+        if(playlist_fwatcher.isCanceled() || !pl)
+            return;
+
+        // Get QFuture result and set target playlist's songs to it, then display it
+        auto results = playlist_fwatcher.future().results();
+        pl->set_songs(results);
+        playlists.append(std::move(*pl));
+        load_playlist_to_songviewer(playlists.back());
+
+        if(results.empty())
+            logger::sb_log(ui->statusbar, u"Playlist is empty"_s, LogLevel::Info);
+        else
+            logger::sb_log(ui->statusbar,
+                           QString("Loaded %1 song(s)").arg(song_model->rowCount()),
+                           LogLevel::Info);
+    });
+
     // Restore state from QSettings
     restore_window_settings();
     restore_menubar_settings();
@@ -94,6 +120,8 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
+    tag_fwatcher.cancel();
+    playlist_fwatcher.cancel();
     delete ui;
 }
 
@@ -112,8 +140,13 @@ void MainWindow::open_playlist_file_selector()
     if(filename.isEmpty())
         return;
 
-    playlists.emplace_back(filename);
-    load_playlist_to_songviewer(playlists.back());
+    if(pending_playlist)
+    {
+        next_pl_path = filename;
+        playlist_fwatcher.cancel();
+        return;
+    }
+    tag_playlist(filename);
 }
 
 void MainWindow::open_music_dir_selector()
@@ -241,6 +274,16 @@ void MainWindow::tag_list(QStringList paths)
     tag_fwatcher.setFuture(QtConcurrent::mapped(std::move(paths), path_to_song));
 }
 
+void MainWindow::tag_playlist(const QString& path)
+{
+    // TODO: Handle duplicate or same name playlists (from different parent dirs)
+    pending_tag_scans.clear();
+    tag_fwatcher.cancel();
+    logger::sb_log(ui->statusbar, QString(u"Loading playlist..."_s), LogLevel::Info, 0);
+    pending_playlist.emplace(path);
+    playlist_fwatcher.setFuture(pending_playlist->tag_all_songs());
+}
+
 QStringList MainWindow::scan_dir(const QDirListing& dir)
 {
     QStringList   song_paths;
@@ -323,6 +366,10 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
         ui->songViewerLabel->setText({});
     }
 
+    // Cancel pending work for opening a playlist earlier
+    playlist_fwatcher.cancel();
+    next_pl_path.reset();
+
     // Extract song metadata using TagLib before replacing/appending to table
     QStringList song_paths = scan_dir(dir);
     open_dirs.insert(dirpath + "/");
@@ -348,10 +395,6 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 // Pass along Songs in Playlist to load into SongTableModel
 void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
 {
-    // Exit if empty
-    if(pl.empty())
-        return;
-
     pending_tag_scans.clear();
     tag_fwatcher.cancel();
     open_dirs.clear();

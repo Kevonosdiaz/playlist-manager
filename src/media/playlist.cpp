@@ -5,9 +5,11 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFuture>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
+#include <QtConcurrentMap>
 
 #include <utility>
 
@@ -18,11 +20,9 @@ Playlist::Playlist(const QString& filepath)
 {
     // TODO: Construct from saved information in QSettings?
     num_playlists++;
-    // name = QString("Playlist %1").arg(num_playlists);
     QFileInfo fi(filepath);
     name = fi.baseName();
     parse_m3u();
-    tag_all_songs();
 }
 
 bool Playlist::empty() const
@@ -33,6 +33,11 @@ bool Playlist::empty() const
 const QVector<Song>& Playlist::get_songs() const
 {
     return songs;
+}
+
+void Playlist::set_songs(QVector<Song> other)
+{
+    songs = std::move(other);
 }
 
 QString Playlist::get_name() const
@@ -136,35 +141,34 @@ void Playlist::parse_m3u()
     }
 }
 
-// Override data in Playlist.songs with TagLib provided metadata
-void Playlist::tag_all_songs()
+// Retag an individual song, to be called concurrently when tagging all songs
+Song Playlist::tag_song(Song s, const QDir& base_dir)
 {
-    if(songs.isEmpty())
-        return;
+    QFileInfo song_info(base_dir, s.path);
+    auto      res = path_to_song(song_info.absoluteFilePath());
 
-    QFileInfo playlist_info(fp);
-    QDir      base_dir(playlist_info.absolutePath());
+    // Could log/keep count of failed tag attempts
+    if(!res)
+        return s;
 
-    // TODO: Call TagLib with multiple threads
-    for(auto& song : songs)
-    {
-        QFileInfo song_info(base_dir, song.path);
-        auto      res = path_to_song(song_info.absoluteFilePath());
-        if(!res)
-        {
-            continue;
-        }
-        // Use TagLib metadata with M3U metadata as fallback
-        if(!res->title.isEmpty())
-            song.title = res->title;
-        if(!res->artist.isEmpty())
-            song.artist = res->artist;
-        if(res->duration_sec)
-            song.duration_sec = res->duration_sec;
-        song.cover = res->cover;
-        song.album = res->album;
-        song.track = res->track;
-    }
+    // Use TagLib metadata with existing M3U metadata as fallback
+    if(!res->title.isEmpty())
+        s.title = res->title;
+    if(!res->artist.isEmpty())
+        s.artist = res->artist;
+    if(res->duration_sec)
+        s.duration_sec = res->duration_sec;
+    s.cover = res->cover;
+    s.album = res->album;
+    s.track = res->track;
 
-    // Emit signal that playlist has changed (if we call this after modification?)
+    return s;
+}
+
+// Override data in Playlist.songs concurrently with TagLib provided metadata
+// Hooks up to a QFutureWatcher on GUI side in mainwindow to replace playlist songs
+QFuture<Song> Playlist::tag_all_songs() const
+{
+    const QDir base_dir(QFileInfo(fp).absolutePath());
+    return QtConcurrent::mapped(songs, [base_dir](const Song& s) { return tag_song(s, base_dir); });
 }
