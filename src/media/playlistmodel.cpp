@@ -10,7 +10,7 @@ int PlaylistModel::rowCount(const QModelIndex& parent) const
 
 QVariant PlaylistModel::data(const QModelIndex& idx, int role) const
 {
-    if(!idx.isValid() || idx.row() >= playlists.size())
+    if(!idx.isValid() || idx.row() < 0 || idx.row() >= playlists.size())
     {
         return {};
     }
@@ -31,10 +31,9 @@ QVariant PlaylistModel::data(const QModelIndex& idx, int role) const
 
 void PlaylistModel::append(Playlist pl)
 {
-    int first = static_cast<int>(pl.size());
-    int last  = first;
-    beginInsertRows(QModelIndex(), first, last);
-    playlists.append(pl);
+    int row = static_cast<int>(playlists.size());
+    beginInsertRows(QModelIndex(), row, row);
+    playlists.append(std::move(pl));
     endInsertRows();
 }
 
@@ -45,6 +44,7 @@ const Playlist& PlaylistModel::at(int row) const
 
 void PlaylistModel::set_songs(int row, QVector<Song> other_songs)
 {
+    // TODO: emit and use dataChanged signal
     if(row >= playlists.size())
         return;
     Playlist& pl = playlists[row];
