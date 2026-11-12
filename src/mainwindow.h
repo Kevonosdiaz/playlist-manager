@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "media/playlist.h"
+#include "media/playlistmodel.h"
 #include "media/songtablemodel.h"
 
 #include <QFileSystemModel>
@@ -35,12 +36,13 @@ private slots:
     void set_file_explorer_root();
     void toggle_recursive_directory_scan();
     void toggle_appending_directory_scan();
+    void on_playlist_selected(const QModelIndex& curr, const QModelIndex& prev);
 
 private:
-    Ui::MainWindow*     ui;
-    QStandardItemModel* playlist_model;
-    SongTableModel*     song_model;
-    QFileSystemModel*   fs_model;
+    Ui::MainWindow*   ui;
+    PlaylistModel*    playlist_model;
+    SongTableModel*   song_model;
+    QFileSystemModel* fs_model;
 
     QFutureWatcher<std::optional<Song>> tag_fwatcher;
     // Used to get diff for # of new songs added
@@ -53,7 +55,6 @@ private:
 
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString>       open_dirs;
-    QList<Playlist>     playlists;
     QQueue<QStringList> pending_tag_scans;
 
     void        setup_models();

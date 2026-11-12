@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget* parent)
     setup_views();
 
     // Handle signal-slot connections
+    // Menubar/Actions
     connect(
         ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
     connect(
@@ -53,6 +54,12 @@ MainWindow::MainWindow(QWidget* parent)
             &QAction::triggered,
             this,
             &MainWindow::toggle_appending_directory_scan);
+
+    // Model/View
+    connect(ui->playlistList->selectionModel(),
+            &QItemSelectionModel::currentChanged,
+            this,
+            &MainWindow::on_playlist_selected);
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
 
     // Hook up watcher to concurrent song tagging incoming results
@@ -104,8 +111,9 @@ MainWindow::MainWindow(QWidget* parent)
         // Get QFuture result and set target playlist's songs to it, then display it
         auto results = playlist_fwatcher.future().results();
         pl->set_songs(results);
-        playlists.append(std::move(*pl));
-        load_playlist_to_songviewer(playlists.back());
+        // Provide accessor to this playlist after moving to playlist_model instead?
+        load_playlist_to_songviewer(*pl);
+        playlist_model->append(std::move(*pl));
 
         if(results.empty())
             logger::sb_log(ui->statusbar, u"Playlist is empty"_s, LogLevel::Info);
@@ -218,11 +226,19 @@ void MainWindow::toggle_appending_directory_scan()
         open_dirs.clear();
 }
 
+void MainWindow::on_playlist_selected(const QModelIndex& curr, const QModelIndex& prev)
+{
+    if(curr == prev || !curr.isValid())
+        return;
+    const Playlist& pl = playlist_model->at(curr.row());
+    load_playlist_to_songviewer(pl);
+}
+
 // Initialize data models and configure properties
 void MainWindow::setup_models()
 {
     // Initialize playlist QListView
-    playlist_model = new QStandardItemModel(this);
+    playlist_model = new PlaylistModel(this);
 
     // Initialize song viewer QTableView headers
     song_model = new SongTableModel(this);
