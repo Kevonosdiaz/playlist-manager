@@ -33,6 +33,10 @@ private:
         return Playlist(p);
     }
 
+    // Run the concurrent tagging step synchronously, the way MainWindow's watcher
+    // handler applies it: results() blocks until every song has been tagged
+    static void tag(Playlist& pl) { pl.set_songs(pl.tag_all_songs().results()); }
+
     static QStringList paths(const Playlist& pl)
     {
         QStringList res;
@@ -244,6 +248,7 @@ private slots:
             {.title = u"Tag Title"_s, .artist = u"Tag Artist"_s, .album = u"Tag Album"_s, .track = 3}));
 
         auto pl = make_playlist("#EXTM3U\n#EXTINF:999,M3U Artist - M3U Title\nsong.wav\n");
+        tag(pl);
         const Song& s = pl.get_songs().first();
         QCOMPARE(s.title, u"Tag Title"_s);
         QCOMPARE(s.artist, u"Tag Artist"_s);
@@ -257,6 +262,7 @@ private slots:
         QVERIFY(testutils::write_silent_wav(path(u"untagged.wav"_s), 2));
 
         auto pl = make_playlist("#EXTM3U\n#EXTINF:999,M3U Artist - M3U Title\nuntagged.wav\n");
+        tag(pl);
         const Song& s = pl.get_songs().first();
         QCOMPARE(s.title, u"M3U Title"_s);
         QCOMPARE(s.artist, u"M3U Artist"_s);
@@ -266,6 +272,7 @@ private slots:
     void missing_song_file_keeps_m3u_metadata()
     {
         auto pl = make_playlist("#EXTM3U\n#EXTINF:999,M3U Artist - M3U Title\nmissing.wav\n");
+        tag(pl);
         const Song& s = pl.get_songs().first();
         QCOMPARE(s.title, u"M3U Title"_s);
         QCOMPARE(s.duration_sec, 999u);
@@ -280,6 +287,7 @@ private slots:
         QVERIFY(testutils::write_tags(path(u"lists/music/song.wav"_s), {.title = u"Found"_s}));
 
         auto pl = make_playlist("music/song.wav\n", u"lists/list.m3u"_s);
+        tag(pl);
         QCOMPARE(pl.get_songs().first().title, u"Found"_s);
     }
 
@@ -292,7 +300,73 @@ private slots:
         QVERIFY(testutils::write_tags(song_path, {.title = u"Absolute"_s}));
 
         auto pl = make_playlist(song_path.toUtf8() + "\n");
+        tag(pl);
         QCOMPARE(pl.get_songs().first().title, u"Absolute"_s);
+    }
+
+    // --- Tagging API contract (tag_all_songs / set_songs) -------------------------
+
+    void constructor_only_parses()
+    {
+        // Tagging is a separate async step now; a fresh Playlist holds M3U data only
+        QVERIFY(testutils::write_silent_wav(path(u"song.wav"_s), 2));
+        QVERIFY(testutils::write_tags(path(u"song.wav"_s), {.title = u"Tag Title"_s}));
+
+        auto pl = make_playlist("#EXTM3U\n#EXTINF:999,M3U Artist - M3U Title\nsong.wav\n");
+        QCOMPARE(pl.get_songs().first().title, u"M3U Title"_s);
+        QCOMPARE(pl.get_songs().first().duration_sec, 999u);
+    }
+
+    void tag_all_songs_does_not_modify_playlist()
+    {
+        // Workers return values; the playlist only changes once set_songs() is called
+        QVERIFY(testutils::write_silent_wav(path(u"song.wav"_s), 1));
+        QVERIFY(testutils::write_tags(path(u"song.wav"_s), {.title = u"Tag Title"_s}));
+
+        auto pl = make_playlist("#EXTM3U\n#EXTINF:5,A - M3U Title\nsong.wav\n");
+        const QList<Song> results = pl.tag_all_songs().results();
+        QCOMPARE(results.first().title, u"Tag Title"_s);
+        QCOMPARE(pl.get_songs().first().title, u"M3U Title"_s);
+    }
+
+    void tag_all_songs_preserves_order()
+    {
+        // MainWindow hands results() straight to set_songs(), so index i must stay song i
+        // even though songs are tagged on different threads
+        const int count = 16;
+        QByteArray contents;
+        for(int i = 0; i < count; i++)
+        {
+            const QString name = QString(u"song%1.wav"_s).arg(i);
+            QVERIFY(testutils::write_silent_wav(path(name), 1));
+            QVERIFY(testutils::write_tags(path(name), {.title = QString(u"Title %1"_s).arg(i)}));
+            contents += name.toUtf8() + "\n";
+        }
+
+        auto pl = make_playlist(contents);
+        tag(pl);
+        QCOMPARE(pl.get_songs().size(), count);
+        for(int i = 0; i < count; i++)
+        {
+            QCOMPARE(pl.get_songs().at(i).path, QString(u"song%1.wav"_s).arg(i));
+            QCOMPARE(pl.get_songs().at(i).title, QString(u"Title %1"_s).arg(i));
+        }
+    }
+
+    void tag_all_songs_on_empty_playlist()
+    {
+        auto pl     = make_playlist("#EXTM3U\n");
+        auto future = pl.tag_all_songs();
+        future.waitForFinished();
+        QVERIFY(future.isFinished());
+        QVERIFY(future.results().isEmpty());
+    }
+
+    void set_songs_replaces_contents()
+    {
+        auto pl = make_playlist("one.mp3\ntwo.mp3\n");
+        pl.set_songs({});
+        QVERIFY(pl.empty());
     }
 };
 
