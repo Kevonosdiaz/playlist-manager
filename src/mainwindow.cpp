@@ -54,6 +54,7 @@ MainWindow::MainWindow(QWidget* parent)
             &QAction::triggered,
             this,
             &MainWindow::toggle_appending_directory_scan);
+    connect(ui->actionCreatePlaylist, &QAction::triggered, this, &MainWindow::create_new_playlist);
 
     // Model/View
     connect(ui->playlistList->selectionModel(),
@@ -111,9 +112,12 @@ MainWindow::MainWindow(QWidget* parent)
         // Get QFuture result and set target playlist's songs to it, then display it
         auto results = playlist_fwatcher.future().results();
         pl->set_songs(results);
-        // Provide accessor to this playlist after moving to playlist_model instead?
-        load_playlist_to_songviewer(*pl);
         playlist_model->append(std::move(*pl));
+
+        // Set UI to select new idx & trigger playlist open
+        const QModelIndex idx = playlist_model->index(playlist_model->rowCount() - 1);
+        ui->playlistList->setFocus();
+        ui->playlistList->setCurrentIndex(idx);
 
         if(results.empty())
             logger::sb_log(ui->statusbar, u"Playlist is empty"_s, LogLevel::Info);
@@ -157,6 +161,41 @@ void MainWindow::open_playlist_file_selector()
         return;
     }
     tag_playlist(filename);
+}
+
+void MainWindow::create_new_playlist()
+{
+    QFileDialog dialog(this,
+                       u"New Playlist File"_s,
+                       QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
+                       u"M3U Media Playlist (*.m3u *.m3u8)"_s);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setDefaultSuffix(".m3u");
+    if(dialog.exec() != QDialog::Accepted)
+        return;
+    QString filename = dialog.selectedFiles().front();
+
+    if(filename.isEmpty())
+        return;
+
+    QFile file(filename);
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        logger::dual_log(ui->statusbar, file.errorString(), LogLevel::Warn);
+        return;
+    }
+    QTextStream out(&file);
+    out << "#EXTM3U\n";
+    file.close();
+    Playlist pl{filename};
+    playlist_model->append(std::move(pl));
+
+    // Set UI to select new idx & trigger playlist open
+    const QModelIndex idx = playlist_model->index(playlist_model->rowCount() - 1);
+    ui->playlistList->setFocus();
+    ui->playlistList->setCurrentIndex(idx);
+
+    logger::dual_log(ui->statusbar, QString("Created playlist at %1").arg(filename));
 }
 
 void MainWindow::open_music_dir_selector()
@@ -353,6 +392,9 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     bool      recursive_mode = s.value(u"files/useRecursiveScan"_s, false).toBool();
     bool      append_mode    = s.value(u"files/useAppendingScan"_s, false).toBool();
 
+    // Clear any open playlist selection since a directory is opened
+    ui->playlistList->selectionModel()->clear();
+
     // If recursive mode is on, add flag to scan subdirs for songs
     using F                               = QDirListing::IteratorFlag;
     QDirListing::IteratorFlags iter_flags = F::ExcludeOther;
@@ -364,8 +406,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     // Exit if empty
     if(dir.begin() == dir.end())
     {
-        logger::sb_log(ui->statusbar, u"No files found in directory, skipping"_s, LogLevel::Info);
-        logger::log(u"No files found in directory, skipping"_s, LogLevel::Info);
+        logger::dual_log(ui->statusbar, u"No files found in directory, skipping"_s, LogLevel::Info);
         return;
     }
 
@@ -373,9 +414,8 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     // Note: does not prevent recursive scan from finding repeats; open_dirs handles those
     if(open_dirs.contains(dirpath + "/"))
     {
-        logger::sb_log(
+        logger::dual_log(
             ui->statusbar, u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
-        logger::log(u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
         return;
     }
 
@@ -419,6 +459,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 // Pass along Songs in Playlist to load into SongTableModel
 void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
 {
+    ui->fileExplorer->selectionModel()->clear();
     pending_tag_scans.clear();
     tag_fwatcher.cancel();
     open_dirs.clear();

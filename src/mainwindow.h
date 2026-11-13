@@ -31,6 +31,7 @@ public:
 private slots:
     void open_about_qt();
     void open_playlist_file_selector();
+    void create_new_playlist();
     void open_music_dir_selector();
     void open_explorer_dir(const QModelIndex& idx);
     void set_file_explorer_root();
