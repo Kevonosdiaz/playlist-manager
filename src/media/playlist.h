@@ -18,12 +18,14 @@ public:
     QString              get_path() const;
     QFuture<Song>        tag_all_songs() const;
     size_t               size() const;
+    bool                 tagged() const;
 
 private:
     inline static uint32_t num_playlists = 0;
     QString                fp;
     QString                name;
-    bool                   is_ext = false;
+    bool                   is_ext    = false;
+    bool                   is_tagged = false;
     QVector<Song>          songs;
 
     void        parse_m3u();

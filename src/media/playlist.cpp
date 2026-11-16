@@ -38,6 +38,8 @@ const QVector<Song>& Playlist::get_songs() const
 void Playlist::set_songs(QVector<Song> other)
 {
     songs = std::move(other);
+    // NOTE: set_songs() is used w/ tagged copy, so we can set is_tagged here
+    is_tagged = true;
 }
 
 QString Playlist::get_name() const
@@ -55,6 +57,12 @@ size_t Playlist::size() const
     return static_cast<size_t>(songs.size());
 }
 
+bool Playlist::tagged() const
+{
+    return is_tagged;
+}
+
+// TODO: Add missing logging
 void Playlist::parse_m3u()
 {
     QFile       f(fp);

@@ -61,3 +61,15 @@ void PlaylistModel::set_songs(int row, QVector<Song> other_songs)
     Playlist& pl = playlists[row];
     pl.set_songs(std::move(other_songs));
 }
+
+void PlaylistModel::save_playlists()
+{
+    QSettings s;
+    s.beginWriteArray(Settings::p_playlists);
+    for(int i = 0; i < playlists.size(); ++i)
+    {
+        s.setArrayIndex(i);
+        s.setValue(Settings::p_playlist_path, playlists.at(i).get_path());
+    }
+    s.endArray();
+}

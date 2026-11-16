@@ -58,7 +58,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     // Model/View
     connect(ui->playlistList->selectionModel(),
-            &QItemSelectionModel::currentChanged,
+            &QItemSelectionModel::selectionChanged,
             this,
             &MainWindow::on_playlist_selected);
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
@@ -100,36 +100,32 @@ MainWindow::MainWindow(QWidget* parent)
     // Watcher for handling concurrent playlist tagging
     connect(&playlist_fwatcher, &QFutureWatcher<Song>::finished, this, [this]() {
         // If another playlist was opened by user, skip loading this playlist
-        auto pl = std::exchange(pending_playlist, std::nullopt);
-        if(next_pl_path)
+        QPersistentModelIndex row = std::exchange(tagging_row, QModelIndex{});
+        if(next_row.isValid())
         {
-            tag_playlist(*std::exchange(next_pl_path, std::nullopt));
+            tag_playlist(std::exchange(next_row, QModelIndex{}));
             return;
         }
-        if(playlist_fwatcher.isCanceled() || !pl)
+        if(playlist_fwatcher.isCanceled() || !row.isValid())
             return;
 
         // Get QFuture result and set target playlist's songs to it, then display it
         auto results = playlist_fwatcher.future().results();
-        pl->set_songs(results);
-        playlist_model->append(std::move(*pl));
-
-        // Set UI to select new idx & trigger playlist open
-        const QModelIndex idx = playlist_model->index(playlist_model->rowCount() - 1);
-        ui->playlistList->setFocus();
-        ui->playlistList->setCurrentIndex(idx);
+        playlist_model->set_songs(row.row(), results);
+        if(ui->playlistList->selectionModel()->isSelected(row))
+            load_playlist_to_songviewer(playlist_model->at(row.row()));
 
         if(results.empty())
             logger::sb_log(ui->statusbar, u"Playlist is empty"_s, LogLevel::Info);
         else
-            logger::sb_log(ui->statusbar,
-                           QString("Loaded %1 song(s)").arg(song_model->rowCount()),
-                           LogLevel::Info);
+            logger::sb_log(
+                ui->statusbar, QString("Loaded %1 song(s)").arg(results.size()), LogLevel::Info);
     });
 
     // Restore state from QSettings
     restore_window_settings();
     restore_menubar_settings();
+    restore_playlists();
 }
 
 MainWindow::~MainWindow()
@@ -164,13 +160,11 @@ void MainWindow::open_playlist_file_selector()
         return;
     }
 
-    if(pending_playlist)
-    {
-        next_pl_path = filename;
-        playlist_fwatcher.cancel();
-        return;
-    }
-    tag_playlist(filename);
+    // Create a new Playlist which will be tagged
+    playlist_model->append(Playlist{filename});
+    auto idx = playlist_model->index(playlist_model->rowCount() - 1);
+    // Setting new index causes selectionChanged signal to fire, leading to tag_playlist() being called in slot
+    ui->playlistList->setCurrentIndex(idx);
 }
 
 void MainWindow::create_new_playlist()
@@ -275,11 +269,29 @@ void MainWindow::toggle_appending_directory_scan()
         open_dirs.clear();
 }
 
-void MainWindow::on_playlist_selected(const QModelIndex& curr, const QModelIndex& prev)
+void MainWindow::on_playlist_selected(const QItemSelection& selected)
 {
-    if(curr == prev || !curr.isValid())
+    if(selected.empty())
         return;
-    const Playlist& pl = playlist_model->at(curr.row());
+    const QModelIndex curr = selected.indexes().front();
+    const Playlist&   pl   = playlist_model->at(curr.row());
+    // Do not repeat work if re-selected
+    if(curr == tagging_row && !playlist_fwatcher.isCanceled())
+        next_row = QModelIndex{};
+    // NOTE: Restored playlists show up, but are not tagged until loaded
+    else if(!pl.tagged())
+    {
+        if(tagging_row.isValid())
+        {
+            next_row = curr;
+            playlist_fwatcher.cancel();
+        }
+        else
+        {
+            tag_playlist(curr);
+        }
+    }
+    // Either shows fully tagged, or bare playlist info from M3U (temporarily)
     load_playlist_to_songviewer(pl);
 }
 
@@ -347,14 +359,13 @@ void MainWindow::tag_list(QStringList paths)
     tag_fwatcher.setFuture(QtConcurrent::mapped(std::move(paths), path_to_song));
 }
 
-void MainWindow::tag_playlist(const QString& path)
+void MainWindow::tag_playlist(const QModelIndex& row_idx)
 {
-    // TODO: Handle duplicate or same name playlists (from different parent dirs)
     pending_tag_scans.clear();
     tag_fwatcher.cancel();
     logger::sb_log(ui->statusbar, QString(u"Loading playlist..."_s), LogLevel::Info, 0);
-    pending_playlist.emplace(path);
-    playlist_fwatcher.setFuture(pending_playlist->tag_all_songs());
+    tagging_row = row_idx;
+    playlist_fwatcher.setFuture(playlist_model->at(tagging_row.row()).tag_all_songs());
 }
 
 QStringList MainWindow::scan_dir(const QDirListing& dir)
@@ -442,7 +453,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 
     // Cancel pending work for opening a playlist earlier
     playlist_fwatcher.cancel();
-    next_pl_path.reset();
+    next_row = QModelIndex{};
 
     // Extract song metadata using TagLib before replacing/appending to table
     QStringList song_paths = scan_dir(dir);
@@ -527,4 +538,20 @@ void MainWindow::restore_menubar_settings()
     ui->actionToggleRecursiveDirectoryScan->setChecked(recursive_checked);
     bool append_checked = s.value(Settings::f_appending, false).toBool();
     ui->actionToggleAppendDirectoryScan->setChecked(append_checked);
+}
+
+void MainWindow::restore_playlists()
+{
+    QSettings s;
+    int       size = s.beginReadArray(Settings::p_playlists);
+    for(int i = 0; i < size; ++i)
+    {
+        s.setArrayIndex(i);
+        QString   path = s.value(Settings::p_playlist_path).toString();
+        QFileInfo fi{path};
+        // Remove missing files & dupes
+        if(fi.exists() && playlist_model->find(path) == -1)
+            playlist_model->append(Playlist{path});
+    }
+    s.endArray();
 }

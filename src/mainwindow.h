@@ -7,6 +7,7 @@
 
 #include <QFileSystemModel>
 #include <QFutureWatcher>
+#include <QItemSelection>
 #include <QMainWindow>
 #include <QQueue>
 #include <QStandardItemModel>
@@ -37,7 +38,7 @@ private slots:
     void set_file_explorer_root();
     void toggle_recursive_directory_scan();
     void toggle_appending_directory_scan();
-    void on_playlist_selected(const QModelIndex& idx);
+    void on_playlist_selected(const QItemSelection& selected);
 
 private:
     Ui::MainWindow*   ui;
@@ -51,8 +52,8 @@ private:
 
     QFutureWatcher<Song> playlist_fwatcher;
     // Values to handle open two playlists simultaneously
-    std::optional<Playlist> pending_playlist;
-    std::optional<QString>  next_pl_path;
+    QPersistentModelIndex tagging_row;
+    QPersistentModelIndex next_row;
 
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString>       open_dirs;
@@ -61,7 +62,7 @@ private:
     void        setup_models();
     void        setup_views();
     void        tag_list(QStringList paths);
-    void        tag_playlist(const QString& path);
+    void        tag_playlist(const QModelIndex& row);
     QStringList scan_dir(const QDirListing& dir);
     void        load_dir_to_songviewer(const QString& dirpath);
     void        load_playlist_to_songviewer(const Playlist& pl);
@@ -69,5 +70,6 @@ private:
     void        closeEvent(QCloseEvent* event) override;
     void        restore_window_settings();
     void        restore_menubar_settings();
+    void        restore_playlists();
 };
 #endif // MAINWINDOW_H
