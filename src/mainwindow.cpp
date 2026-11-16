@@ -3,6 +3,7 @@
 #include "ui_mainwindow.h"
 #include "utils/constants.h"
 #include "utils/logger.h"
+#include "utils/settings.h"
 
 #include <QDirListing>
 #include <QFileDialog>
@@ -10,7 +11,6 @@
 #include <QFileSystemModel>
 #include <QFutureWatcher>
 #include <QHeaderView>
-#include <QSettings>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QStandardPaths>
@@ -233,7 +233,7 @@ void MainWindow::set_file_explorer_root()
     }
 
     QSettings s;
-    s.setValue(u"files/fileExplorerRoot"_s, dirpath);
+    s.setValue(Settings::f_explorer_root, dirpath);
     fs_model->setRootPath(dirpath);
     ui->fileExplorer->setRootIndex(fs_model->index(fs_model->rootPath()));
     logger::dual_log(ui->statusbar, u"Set file explorer root to "_s + dirpath);
@@ -243,8 +243,8 @@ void MainWindow::set_file_explorer_root()
 void MainWindow::toggle_recursive_directory_scan()
 {
     QSettings s;
-    bool      new_val = !s.value(u"files/useRecursiveScan"_s, false).toBool();
-    s.setValue(u"files/useRecursiveScan"_s, new_val);
+    bool      new_val = !s.value(Settings::f_recursive, false).toBool();
+    s.setValue(Settings::f_recursive, new_val);
     ui->actionToggleRecursiveDirectoryScan->setChecked(new_val);
 
     if(!ui->actionToggleAppendDirectoryScan->isChecked())
@@ -255,8 +255,8 @@ void MainWindow::toggle_recursive_directory_scan()
 void MainWindow::toggle_appending_directory_scan()
 {
     QSettings s;
-    bool      new_val = !s.value(u"files/useAppendingScan"_s, false).toBool();
-    s.setValue(u"files/useAppendingScan"_s, new_val);
+    bool      new_val = !s.value(Settings::f_appending, false).toBool();
+    s.setValue(Settings::f_appending, new_val);
     ui->actionToggleAppendDirectoryScan->setChecked(new_val);
 
     // We should clear open dirs if append mode got turned off, so
@@ -289,7 +289,7 @@ void MainWindow::setup_models()
     {
         default_dir = QDir::homePath();
     }
-    QString dir = s.value("files/fileExplorerRoot", default_dir).toString();
+    QString dir = s.value(Settings::f_explorer_root, default_dir).toString();
     fs_model    = new QFileSystemModel(this);
     fs_model->setRootPath(dir);
     fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -389,8 +389,8 @@ QStringList MainWindow::scan_dir(const QDirListing& dir)
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     QSettings s;
-    bool      recursive_mode = s.value(u"files/useRecursiveScan"_s, false).toBool();
-    bool      append_mode    = s.value(u"files/useAppendingScan"_s, false).toBool();
+    bool      recursive_mode = s.value(Settings::f_recursive, false).toBool();
+    bool      append_mode    = s.value(Settings::f_appending, false).toBool();
 
     // Clear any open playlist selection since a directory is opened
     ui->playlistList->selectionModel()->clear();
@@ -494,26 +494,27 @@ void MainWindow::fit_song_columns_to_contents()
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     QSettings s;
-    s.setValue("window/geometry", saveGeometry());
-    s.setValue("window/state", saveState());
+    s.setValue(Settings::w_geometry, saveGeometry());
+    s.setValue(Settings::w_state, saveState());
+    playlist_model->save_playlists();
     QMainWindow::closeEvent(event);
 }
 
 void MainWindow::restore_window_settings()
 {
     QSettings s;
-    if(s.contains("window/geometry"))
-        restoreGeometry(s.value("window/geometry").toByteArray());
-    if(s.contains("window/state"))
-        restoreState(s.value("window/state").toByteArray());
+    if(s.contains(Settings::w_geometry))
+        restoreGeometry(s.value(Settings::w_geometry).toByteArray());
+    if(s.contains(Settings::w_state))
+        restoreState(s.value(Settings::w_state).toByteArray());
 }
 
 // Restore state of check boxes in menubar
 void MainWindow::restore_menubar_settings()
 {
     QSettings s;
-    bool      recursive_checked = s.value(u"files/useRecursiveScan"_s, false).toBool();
+    bool      recursive_checked = s.value(Settings::f_recursive, false).toBool();
     ui->actionToggleRecursiveDirectoryScan->setChecked(recursive_checked);
-    bool append_checked = s.value(u"files/useAppendingScan"_s, false).toBool();
+    bool append_checked = s.value(Settings::f_appending, false).toBool();
     ui->actionToggleAppendDirectoryScan->setChecked(append_checked);
 }

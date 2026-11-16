@@ -37,7 +37,7 @@ private slots:
     void set_file_explorer_root();
     void toggle_recursive_directory_scan();
     void toggle_appending_directory_scan();
-    void on_playlist_selected(const QModelIndex& curr, const QModelIndex& prev);
+    void on_playlist_selected(const QModelIndex& idx);
 
 private:
     Ui::MainWindow*   ui;

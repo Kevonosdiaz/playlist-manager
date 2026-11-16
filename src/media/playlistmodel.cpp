@@ -1,4 +1,5 @@
 #include "playlistmodel.h"
+#include "../utils/settings.h"
 
 PlaylistModel::PlaylistModel(QObject* parent)
     : QAbstractListModel(parent) { };
