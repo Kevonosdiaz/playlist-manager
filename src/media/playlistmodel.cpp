@@ -43,6 +43,16 @@ const Playlist& PlaylistModel::at(int row) const
     return playlists.at(row);
 }
 
+int PlaylistModel::find(const QString& path) const
+{
+    for(int i = 0; i < playlists.size(); ++i)
+    {
+        if(playlists.at(i).get_path() == path)
+            return i;
+    }
+    return -1;
+}
+
 void PlaylistModel::set_songs(int row, QVector<Song> other_songs)
 {
     // TODO: emit and use dataChanged signal

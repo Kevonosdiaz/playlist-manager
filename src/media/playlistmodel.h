@@ -22,6 +22,7 @@ public:
     QVariant        data(const QModelIndex& idx, int role = Qt::DisplayRole) const override;
     void            append(Playlist pl);
     const Playlist& at(int row) const;
+    int             find(const QString& path) const;
     void            set_songs(int row, QVector<Song> other_songs);
 
 private:

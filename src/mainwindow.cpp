@@ -154,6 +154,16 @@ void MainWindow::open_playlist_file_selector()
     if(filename.isEmpty())
         return;
 
+    // If playlist saved in playlist list already, select that instead
+    int find_res = playlist_model->find(filename);
+    if(find_res != -1)
+    {
+        const QModelIndex idx = playlist_model->index(find_res);
+        ui->playlistList->setFocus();
+        ui->playlistList->setCurrentIndex(idx);
+        return;
+    }
+
     if(pending_playlist)
     {
         next_pl_path = filename;
