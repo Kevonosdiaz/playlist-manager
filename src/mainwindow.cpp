@@ -11,6 +11,7 @@
 #include <QFileSystemModel>
 #include <QFutureWatcher>
 #include <QHeaderView>
+#include <QMenu>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QStandardPaths>
@@ -36,91 +37,8 @@ MainWindow::MainWindow(QWidget* parent)
     setup_views();
 
     // Handle signal-slot connections
-    // Menubar/Actions
-    connect(
-        ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
-    connect(
-        ui->actionOpenDirectory, &QAction::triggered, this, &MainWindow::open_music_dir_selector);
-    connect(ui->actionAboutQt, &QAction::triggered, this, &MainWindow::open_about_qt);
-    connect(ui->actionSetFileExplorerRoot,
-            &QAction::triggered,
-            this,
-            &MainWindow::set_file_explorer_root);
-    connect(ui->actionToggleRecursiveDirectoryScan,
-            &QAction::triggered,
-            this,
-            &MainWindow::toggle_recursive_directory_scan);
-    connect(ui->actionToggleAppendDirectoryScan,
-            &QAction::triggered,
-            this,
-            &MainWindow::toggle_appending_directory_scan);
-    connect(ui->actionCreatePlaylist, &QAction::triggered, this, &MainWindow::create_new_playlist);
-
-    // Model/View
-    connect(ui->playlistList->selectionModel(),
-            &QItemSelectionModel::selectionChanged,
-            this,
-            &MainWindow::on_playlist_selected);
-    connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
-
-    // Hook up watcher to concurrent song tagging incoming results
-    connect(&tag_fwatcher,
-            &QFutureWatcher<std::optional<Song>>::resultsReadyAt,
-            this,
-            [this](int begin, int end) {
-                QVector<Song> batch;
-                for(int i = begin; i < end; i++)
-                {
-                    if(auto s = tag_fwatcher.resultAt(i))
-                        batch.push_back(std::move(*s));
-                }
-                song_model->add_songs(std::move(batch));
-            });
-    connect(&tag_fwatcher, &QFutureWatcher<std::optional<Song>>::finished, this, [this]() {
-        // Run next directory (if added with append mode)
-        if(!pending_tag_scans.empty())
-        {
-            logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
-            tag_list(pending_tag_scans.dequeue());
-            return;
-        }
-
-        if(tag_fwatcher.isCanceled())
-            return;
-
-        // Sort, resize cols, etc.
-        ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
-        fit_song_columns_to_contents();
-        auto curr_song_count = song_model->rowCount();
-        logger::sb_log(ui->statusbar,
-                       QString("Loaded %1 song(s)").arg(curr_song_count - prev_song_count),
-                       LogLevel::Info);
-    });
-
-    // Watcher for handling concurrent playlist tagging
-    connect(&playlist_fwatcher, &QFutureWatcher<Song>::finished, this, [this]() {
-        // If another playlist was opened by user, skip loading this playlist
-        QPersistentModelIndex row = std::exchange(tagging_row, QModelIndex{});
-        if(next_row.isValid())
-        {
-            tag_playlist(std::exchange(next_row, QModelIndex{}));
-            return;
-        }
-        if(playlist_fwatcher.isCanceled() || !row.isValid())
-            return;
-
-        // Get QFuture result and set target playlist's songs to it, then display it
-        auto results = playlist_fwatcher.future().results();
-        playlist_model->set_songs(row.row(), results);
-        if(ui->playlistList->selectionModel()->isSelected(row))
-            load_playlist_to_songviewer(playlist_model->at(row.row()));
-
-        if(results.empty())
-            logger::sb_log(ui->statusbar, u"Playlist is empty"_s, LogLevel::Info);
-        else
-            logger::sb_log(
-                ui->statusbar, QString("Loaded %1 song(s)").arg(results.size()), LogLevel::Info);
-    });
+    setup_menu_action_connections();
+    setup_model_view_connections();
 
     // Restore state from QSettings
     restore_window_settings();
@@ -295,6 +213,22 @@ void MainWindow::on_playlist_selected(const QItemSelection& selected)
     load_playlist_to_songviewer(pl);
 }
 
+void MainWindow::show_playlist_ctx_menu(const QPoint& pos)
+{
+    const QModelIndex idx = ui->playlistList->indexAt(pos);
+    if(!idx.isValid())
+        return;
+    QMenu                       menu(this);
+    const QPersistentModelIndex target{idx};
+    menu.addAction(u"Remove from List"_s, this, [this, target] {
+        if(!target.isValid())
+            return;
+        remove_playlist(target);
+    });
+    // TODO: Add deletion & rename actions?
+    menu.exec(ui->playlistList->viewport()->mapToGlobal(pos));
+}
+
 // Initialize data models and configure properties
 void MainWindow::setup_models()
 {
@@ -322,6 +256,7 @@ void MainWindow::setup_views()
 {
     // Setup playlist viewer (QListView)
     ui->playlistList->setModel(playlist_model);
+    ui->playlistList->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
 
     // Setup song viewer (QTableView)
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
@@ -352,6 +287,101 @@ void MainWindow::setup_views()
     ui->fileExplorer->setColumnHidden(3, true);
 }
 
+void MainWindow::setup_menu_action_connections()
+{
+    connect(
+        ui->actionOpenFile, &QAction::triggered, this, &MainWindow::open_playlist_file_selector);
+    connect(
+        ui->actionOpenDirectory, &QAction::triggered, this, &MainWindow::open_music_dir_selector);
+    connect(ui->actionAboutQt, &QAction::triggered, this, &MainWindow::open_about_qt);
+    connect(ui->actionSetFileExplorerRoot,
+            &QAction::triggered,
+            this,
+            &MainWindow::set_file_explorer_root);
+    connect(ui->actionToggleRecursiveDirectoryScan,
+            &QAction::triggered,
+            this,
+            &MainWindow::toggle_recursive_directory_scan);
+    connect(ui->actionToggleAppendDirectoryScan,
+            &QAction::triggered,
+            this,
+            &MainWindow::toggle_appending_directory_scan);
+    connect(ui->actionCreatePlaylist, &QAction::triggered, this, &MainWindow::create_new_playlist);
+}
+
+void MainWindow::setup_model_view_connections()
+{
+    connect(ui->playlistList->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            this,
+            &MainWindow::on_playlist_selected);
+    connect(ui->playlistList,
+            &QWidget::customContextMenuRequested,
+            this,
+            &MainWindow::show_playlist_ctx_menu);
+
+    connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
+
+    // Hook up watcher to concurrent song tagging incoming results
+    connect(&tag_fwatcher,
+            &QFutureWatcher<std::optional<Song>>::resultsReadyAt,
+            this,
+            [this](int begin, int end) {
+                QVector<Song> batch;
+                for(int i = begin; i < end; i++)
+                {
+                    if(auto s = tag_fwatcher.resultAt(i))
+                        batch.push_back(std::move(*s));
+                }
+                song_model->add_songs(std::move(batch));
+            });
+    connect(&tag_fwatcher, &QFutureWatcher<std::optional<Song>>::finished, this, [this]() {
+        // Run next directory (if added with append mode)
+        if(!pending_tag_scans.empty())
+        {
+            logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
+            tag_list(pending_tag_scans.dequeue());
+            return;
+        }
+
+        if(tag_fwatcher.isCanceled())
+            return;
+
+        // Sort, resize cols, etc.
+        ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
+        fit_song_columns_to_contents();
+        auto curr_song_count = song_model->rowCount();
+        logger::sb_log(ui->statusbar,
+                       QString("Loaded %1 song(s)").arg(curr_song_count - prev_song_count),
+                       LogLevel::Info);
+    });
+
+    // Watcher for handling concurrent playlist tagging
+    connect(&playlist_fwatcher, &QFutureWatcher<Song>::finished, this, [this]() {
+        // If another playlist was opened by user, skip loading this playlist
+        QPersistentModelIndex row = std::exchange(tagging_row, QModelIndex{});
+        if(next_row.isValid())
+        {
+            tag_playlist(std::exchange(next_row, QModelIndex{}));
+            return;
+        }
+        if(playlist_fwatcher.isCanceled() || !row.isValid())
+            return;
+
+        // Get QFuture result and set target playlist's songs to it, then display it
+        auto results = playlist_fwatcher.future().results();
+        playlist_model->set_songs(row.row(), results);
+        if(ui->playlistList->selectionModel()->isSelected(row))
+            load_playlist_to_songviewer(playlist_model->at(row.row()));
+
+        if(results.empty())
+            logger::sb_log(ui->statusbar, u"Playlist is empty"_s, LogLevel::Info);
+        else
+            logger::sb_log(
+                ui->statusbar, QString("Loaded %1 song(s)").arg(results.size()), LogLevel::Info);
+    });
+}
+
 // Concurrently tag song at each path in paths
 void MainWindow::tag_list(QStringList paths)
 {
@@ -359,13 +389,24 @@ void MainWindow::tag_list(QStringList paths)
     tag_fwatcher.setFuture(QtConcurrent::mapped(std::move(paths), path_to_song));
 }
 
-void MainWindow::tag_playlist(const QModelIndex& row_idx)
+void MainWindow::tag_playlist(const QModelIndex& idx)
 {
     pending_tag_scans.clear();
     tag_fwatcher.cancel();
     logger::sb_log(ui->statusbar, QString(u"Loading playlist..."_s), LogLevel::Info, 0);
-    tagging_row = row_idx;
+    tagging_row = idx;
     playlist_fwatcher.setFuture(playlist_model->at(tagging_row.row()).tag_all_songs());
+}
+
+bool MainWindow::remove_playlist(const QModelIndex& idx)
+{
+    // Cancel unnecessary tagging work if currently tagging
+    if(idx == tagging_row)
+        playlist_fwatcher.cancel();
+    // Clear open playlist from song viewer if it is being removed
+    if(ui->playlistList->selectionModel()->isSelected(idx))
+        clear_songviewer();
+    return playlist_model->removeRows(idx.row(), 1);
 }
 
 QStringList MainWindow::scan_dir(const QDirListing& dir)
@@ -446,9 +487,8 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     {
         pending_tag_scans.clear();
         tag_fwatcher.cancel();
-        song_model->set_songs({});
         open_dirs.clear();
-        ui->songViewerLabel->setText({});
+        clear_songviewer();
     }
 
     // Cancel pending work for opening a playlist earlier
@@ -489,6 +529,12 @@ void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
     ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
     fit_song_columns_to_contents();
     ui->songViewerLabel->setText(pl.get_name());
+}
+
+void MainWindow::clear_songviewer()
+{
+    song_model->set_songs({});
+    ui->songViewerLabel->setText({});
 }
 
 // Resize columns based on text content, up to a max cap

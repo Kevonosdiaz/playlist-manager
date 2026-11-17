@@ -32,7 +32,8 @@ QVariant PlaylistModel::data(const QModelIndex& idx, int role) const
 
 bool PlaylistModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    if(!parent.isValid() || count <= 0 || row < 0 || row + count > playlists.size())
+    // NOTE: Flat lists should have no valid parent
+    if(parent.isValid() || count <= 0 || row < 0 || row + count > playlists.size())
         return false;
     beginRemoveRows(QModelIndex(), row, row + count - 1);
     playlists.remove(row, count);
