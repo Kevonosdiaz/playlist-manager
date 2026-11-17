@@ -18,9 +18,10 @@ public:
     };
     explicit PlaylistModel(QObject* parent = nullptr);
 
-    int             rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant        data(const QModelIndex& idx, int role = Qt::DisplayRole) const override;
-    void            append(Playlist pl);
+    int      rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex& idx, int role = Qt::DisplayRole) const override;
+    bool     removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
+    void     append(Playlist pl);
     const Playlist& at(int row) const;
     int             find(const QString& path) const;
     void            set_songs(int row, QVector<Song> other_songs);
