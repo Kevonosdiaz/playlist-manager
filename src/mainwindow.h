@@ -60,22 +60,20 @@ private:
     QSet<QString>       open_dirs;
     QQueue<QStringList> pending_tag_scans;
 
-    void        setup_models();
-    void        setup_views();
-    void        setup_menu_action_connections();
-    void        setup_model_view_connections();
-    void        tag_list(QStringList paths);
-    void        tag_playlist(const QModelIndex& idx);
-    void        remove_playlist(const QModelIndex& idx);
-    void        delete_playlist(const QModelIndex& idx);
-    QStringList scan_dir(const QDirListing& dir);
-    void        load_dir_to_songviewer(const QString& dirpath);
-    void        load_playlist_to_songviewer(const Playlist& pl);
-    void        clear_songviewer();
-    void        fit_song_columns_to_contents();
-    void        closeEvent(QCloseEvent* event) override;
-    void        restore_window_settings();
-    void        restore_menubar_settings();
-    void        restore_playlists();
+    void setup_models();
+    void setup_views();
+    void setup_menu_action_connections();
+    void setup_model_view_connections();
+    void tag_list(QStringList paths);
+    void tag_playlist(const QModelIndex& idx);
+    void remove_playlist(const QModelIndex& idx);
+    void delete_playlist(const QModelIndex& idx);
+    void load_dir_to_songviewer(const QString& dirpath);
+    void load_playlist_to_songviewer(const Playlist& pl);
+    void clear_songviewer();
+    void fit_song_columns_to_contents();
+    void closeEvent(QCloseEvent* event) override;
+    void restore_window_settings();
+    void restore_menubar_settings();
 };
 #endif // MAINWINDOW_H

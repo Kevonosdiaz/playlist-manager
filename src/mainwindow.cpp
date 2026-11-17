@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "media/dirscan.h"
 #include "media/tag.h"
 #include "ui_mainwindow.h"
 #include "utils/constants.h"
@@ -439,44 +440,6 @@ void MainWindow::delete_playlist(const QModelIndex& idx)
     remove_playlist(idx);
 }
 
-QStringList MainWindow::scan_dir(const QDirListing& dir)
-{
-    QStringList   song_paths;
-    QSet<QString> new_exclusions;
-    for(const auto& item : dir)
-    {
-        // What should we do with symlinks eventually? Resolve them?
-        if(item.isSymLink())
-            continue;
-
-        // Skip item if it begins with a directory path we already opened
-        QString fp        = item.absoluteFilePath();
-        bool    skip_flag = false;
-        for(const QString& dirname : std::as_const(open_dirs))
-        {
-            if(fp.startsWith(dirname))
-            {
-                skip_flag = true;
-                break;
-            }
-        }
-        if(skip_flag)
-            continue;
-
-        if(item.isDir())
-        {
-            // Append a '/' to avoid potential false positives during exclusion
-            new_exclusions.insert(fp + "/");
-            continue;
-        }
-
-        song_paths.push_back(std::move(fp));
-    }
-
-    open_dirs += new_exclusions;
-    return song_paths;
-}
-
 // Scan song files into Song structs and load into SongTableModel
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
@@ -526,7 +489,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
     next_row = QModelIndex{};
 
     // Extract song metadata using TagLib before replacing/appending to table
-    QStringList song_paths = scan_dir(dir);
+    QStringList song_paths = scan_dir(dir, open_dirs);
     open_dirs.insert(dirpath + "/");
 
     // Enqueue current dir if another dir is currently being tagged, else tag immediately
