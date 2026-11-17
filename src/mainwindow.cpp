@@ -6,12 +6,14 @@
 #include "utils/settings.h"
 
 #include <QDirListing>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemModel>
 #include <QFutureWatcher>
 #include <QHeaderView>
 #include <QMenu>
+#include <QMessageBox>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QStandardPaths>
@@ -213,6 +215,7 @@ void MainWindow::on_playlist_selected(const QItemSelection& selected)
     load_playlist_to_songviewer(pl);
 }
 
+// TODO: Consider adding rename, "edit mode" options?
 void MainWindow::show_playlist_ctx_menu(const QPoint& pos)
 {
     const QModelIndex idx = ui->playlistList->indexAt(pos);
@@ -225,7 +228,18 @@ void MainWindow::show_playlist_ctx_menu(const QPoint& pos)
             return;
         remove_playlist(target);
     });
-    // TODO: Add deletion & rename actions?
+    menu.addAction(u"Delete Playlist"_s, this, [this, target] {
+        if(!target.isValid())
+            return;
+        const auto reply
+            = QMessageBox::question(this,
+                                    u"Confirm Action"_s,
+                                    u"Do you want to delete playlist \"%1\" from disk?"_s.arg(
+                                        playlist_model->at(target.row()).get_name()));
+        if(reply == QMessageBox::Yes && target.isValid())
+            delete_playlist(target);
+    });
+
     menu.exec(ui->playlistList->viewport()->mapToGlobal(pos));
 }
 
@@ -409,6 +423,20 @@ void MainWindow::remove_playlist(const QModelIndex& idx)
     bool res = playlist_model->removeRows(idx.row(), 1);
     if(!res)
         logger::dual_log(ui->statusbar, u"Failed to remove playlist"_s, LogLevel::Warn);
+    playlist_model->save_playlists();
+}
+
+void MainWindow::delete_playlist(const QModelIndex& idx)
+{
+    // Try deleting file first, then remove Playlist object from model if successful or already removed from disk
+    QFile f(playlist_model->at(idx.row()).get_path());
+    if(!f.remove() && f.exists())
+    {
+        logger::dual_log(
+            ui->statusbar, u"Failed to delete playlist: "_s + f.errorString(), LogLevel::Warn);
+        return;
+    }
+    remove_playlist(idx);
 }
 
 QStringList MainWindow::scan_dir(const QDirListing& dir)
