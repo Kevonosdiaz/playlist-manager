@@ -398,7 +398,7 @@ void MainWindow::tag_playlist(const QModelIndex& idx)
     playlist_fwatcher.setFuture(playlist_model->at(tagging_row.row()).tag_all_songs());
 }
 
-bool MainWindow::remove_playlist(const QModelIndex& idx)
+void MainWindow::remove_playlist(const QModelIndex& idx)
 {
     // Cancel unnecessary tagging work if currently tagging
     if(idx == tagging_row)
@@ -406,7 +406,9 @@ bool MainWindow::remove_playlist(const QModelIndex& idx)
     // Clear open playlist from song viewer if it is being removed
     if(ui->playlistList->selectionModel()->isSelected(idx))
         clear_songviewer();
-    return playlist_model->removeRows(idx.row(), 1);
+    bool res = playlist_model->removeRows(idx.row(), 1);
+    if(!res)
+        logger::dual_log(ui->statusbar, u"Failed to remove playlist"_s, LogLevel::Warn);
 }
 
 QStringList MainWindow::scan_dir(const QDirListing& dir)
