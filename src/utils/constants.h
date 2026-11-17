@@ -20,4 +20,6 @@ inline const QStringList VALID_FILETYPES{
     "*.wv",
 };
 
+inline constexpr QLatin1StringView M3U_FILE_FILTER{"M3U Media Playlist (*.m3u *.m3u8)"};
+
 #endif /* CONSTANTS_H */

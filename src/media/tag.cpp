@@ -11,7 +11,6 @@
 
 namespace
 {
-
     // Retrieves embedded album art from file using TagLib
     QImage get_image_data(const TagLib::FileRef& f)
     {

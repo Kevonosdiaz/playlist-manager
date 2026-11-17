@@ -28,6 +28,15 @@
 // Allow ""_s operator on string literals for compile time QString construction
 using namespace Qt::StringLiterals;
 
+namespace
+{
+    QString default_music_dir()
+    {
+        QString dir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+        return dir.isEmpty() ? QDir::homePath() : dir;
+    }
+}
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -64,10 +73,7 @@ void MainWindow::open_about_qt()
 void MainWindow::open_playlist_file_selector()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this,
-        u"Open Playlist File"_s,
-        QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
-        u"M3U Media Playlist (*.m3u *.m3u8)"_s);
+        this, u"Open Playlist File"_s, default_music_dir(), M3U_FILE_FILTER);
     if(filename.isEmpty())
         return;
 
@@ -90,10 +96,7 @@ void MainWindow::open_playlist_file_selector()
 
 void MainWindow::create_new_playlist()
 {
-    QFileDialog dialog(this,
-                       u"New Playlist File"_s,
-                       QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
-                       u"M3U Media Playlist (*.m3u *.m3u8)"_s);
+    QFileDialog dialog(this, u"New Playlist File"_s, default_music_dir(), M3U_FILE_FILTER);
     dialog.setAcceptMode(QFileDialog::AcceptSave);
     dialog.setDefaultSuffix(".m3u");
     if(dialog.exec() != QDialog::Accepted)
@@ -125,8 +128,8 @@ void MainWindow::create_new_playlist()
 
 void MainWindow::open_music_dir_selector()
 {
-    QString dirpath = QFileDialog::getExistingDirectory(
-        this, u"Open Directory"_s, QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+    QString dirpath
+        = QFileDialog::getExistingDirectory(this, u"Open Directory"_s, default_music_dir());
 
     if(dirpath.isEmpty())
         return;
@@ -144,8 +147,8 @@ void MainWindow::open_explorer_dir(const QModelIndex& idx)
 // Prompt user to select root for the QFileSystemModel file explorer
 void MainWindow::set_file_explorer_root()
 {
-    QString dirpath = QFileDialog::getExistingDirectory(
-        this, u"Open Directory"_s, QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+    QString dirpath
+        = QFileDialog::getExistingDirectory(this, u"Open Directory"_s, default_music_dir());
 
     if(dirpath.isEmpty())
         return;
@@ -255,13 +258,8 @@ void MainWindow::setup_models()
 
     // Initialize file explorer to saved root, otherwise Music dir or home
     QSettings s;
-    QString   default_dir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
-    if(default_dir.isEmpty())
-    {
-        default_dir = QDir::homePath();
-    }
-    QString dir = s.value(Settings::f_explorer_root, default_dir).toString();
-    fs_model    = new QFileSystemModel(this);
+    QString   dir = s.value(Settings::f_explorer_root, default_music_dir()).toString();
+    fs_model      = new QFileSystemModel(this);
     fs_model->setRootPath(dir);
     fs_model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
 }
