@@ -84,3 +84,19 @@ void PlaylistModel::save_playlists()
     }
     s.endArray();
 }
+
+void PlaylistModel::restore_playlists()
+{
+    QSettings s;
+    int       size = s.beginReadArray(Settings::p_playlists);
+    for(int i = 0; i < size; ++i)
+    {
+        s.setArrayIndex(i);
+        QString   path = s.value(Settings::p_playlist_path).toString();
+        QFileInfo fi{path};
+        // Remove missing files & dupes
+        if(fi.exists() && find(path) == -1)
+            append(Playlist{path});
+    }
+    s.endArray();
+}

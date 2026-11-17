@@ -45,7 +45,7 @@ MainWindow::MainWindow(QWidget* parent)
     // Restore state from QSettings
     restore_window_settings();
     restore_menubar_settings();
-    restore_playlists();
+    playlist_model->restore_playlists();
 }
 
 MainWindow::~MainWindow()
@@ -614,20 +614,4 @@ void MainWindow::restore_menubar_settings()
     ui->actionToggleRecursiveDirectoryScan->setChecked(recursive_checked);
     bool append_checked = s.value(Settings::f_appending, false).toBool();
     ui->actionToggleAppendDirectoryScan->setChecked(append_checked);
-}
-
-void MainWindow::restore_playlists()
-{
-    QSettings s;
-    int       size = s.beginReadArray(Settings::p_playlists);
-    for(int i = 0; i < size; ++i)
-    {
-        s.setArrayIndex(i);
-        QString   path = s.value(Settings::p_playlist_path).toString();
-        QFileInfo fi{path};
-        // Remove missing files & dupes
-        if(fi.exists() && playlist_model->find(path) == -1)
-            playlist_model->append(Playlist{path});
-    }
-    s.endArray();
 }

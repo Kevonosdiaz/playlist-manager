@@ -26,6 +26,7 @@ public:
     int             find(const QString& path) const;
     void            set_songs(int row, QVector<Song> other_songs);
     void            save_playlists();
+    void            restore_playlists();
 
 private:
     QList<Playlist> playlists;
