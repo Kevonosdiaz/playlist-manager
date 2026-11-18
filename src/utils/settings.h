@@ -13,6 +13,10 @@ namespace Settings
     inline constexpr QLatin1StringView p_playlists("media/playlists");
     inline constexpr QLatin1StringView p_playlist_path("path");
 
+    bool get_recursive_mode();
+    bool get_append_mode();
+    void set_recursive_mode(bool new_val);
+    void set_append_mode(bool new_val);
 }
 
 #endif /* SETTINGS_H */

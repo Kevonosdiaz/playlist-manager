@@ -170,9 +170,8 @@ void MainWindow::set_file_explorer_root()
 // Toggle setting to cause QDirListing to scan directories recursively for song files
 void MainWindow::toggle_recursive_directory_scan()
 {
-    QSettings s;
-    bool      new_val = !s.value(Settings::f_recursive, false).toBool();
-    s.setValue(Settings::f_recursive, new_val);
+    bool new_val = !Settings::get_recursive_mode();
+    Settings::set_recursive_mode(new_val);
     ui->actionToggleRecursiveDirectoryScan->setChecked(new_val);
 
     if(!ui->actionToggleAppendDirectoryScan->isChecked())
@@ -182,9 +181,8 @@ void MainWindow::toggle_recursive_directory_scan()
 // Toggle setting to append song files to song viewer
 void MainWindow::toggle_appending_directory_scan()
 {
-    QSettings s;
-    bool      new_val = !s.value(Settings::f_appending, false).toBool();
-    s.setValue(Settings::f_appending, new_val);
+    bool new_val = !Settings::get_append_mode();
+    Settings::set_append_mode(new_val);
     ui->actionToggleAppendDirectoryScan->setChecked(new_val);
 
     // We should clear open dirs if append mode got turned off, so
@@ -442,8 +440,8 @@ void MainWindow::delete_playlist(const QModelIndex& idx)
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     QSettings s;
-    bool      recursive_mode = s.value(Settings::f_recursive, false).toBool();
-    bool      append_mode    = s.value(Settings::f_appending, false).toBool();
+    bool      recursive_mode = Settings::get_recursive_mode();
+    bool      append_mode    = Settings::get_append_mode();
 
     // Clear any open playlist selection since a directory is opened
     ui->playlistList->selectionModel()->clear();
@@ -571,8 +569,8 @@ void MainWindow::restore_window_settings()
 void MainWindow::restore_menubar_settings()
 {
     QSettings s;
-    bool      recursive_checked = s.value(Settings::f_recursive, false).toBool();
+    bool      recursive_checked = Settings::get_recursive_mode();
     ui->actionToggleRecursiveDirectoryScan->setChecked(recursive_checked);
-    bool append_checked = s.value(Settings::f_appending, false).toBool();
+    bool append_checked = Settings::get_append_mode();
     ui->actionToggleAppendDirectoryScan->setChecked(append_checked);
 }
