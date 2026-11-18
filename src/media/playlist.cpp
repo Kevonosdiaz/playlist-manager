@@ -118,9 +118,11 @@ void Playlist::parse_m3u()
                 // Attempt to split by Artist - Title, otherwise just Title
                 auto hyphen_pos = remainder.indexOf(" - ");
                 if(hyphen_pos != -1 && remainder.contains(u" - "_s))
+                const auto hyphen_pos = remainder.indexOf(" - ");
+                if(hyphen_pos != -1)
                 {
                     s.artist = remainder.sliced(0, hyphen_pos).trimmed();
-                    s.title  = remainder.sliced(hyphen_pos + 1).trimmed();
+                    s.title  = remainder.sliced(hyphen_pos + 3).trimmed();
                 }
                 else
                 {

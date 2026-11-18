@@ -218,9 +218,7 @@ private slots:
     {
         auto pl = make_playlist("#EXTM3U\n#EXTINF:10,Jay-Z - 99 Problems\none.mp3\n");
         const Song& s = pl.get_songs().first();
-        QEXPECT_FAIL("", "Review #7: splits on the first '-' rather than on \" - \"", Continue);
         QCOMPARE(s.artist, u"Jay-Z"_s);
-        QEXPECT_FAIL("", "Review #7: splits on the first '-' rather than on \" - \"", Continue);
         QCOMPARE(s.title, u"99 Problems"_s);
     }
 
