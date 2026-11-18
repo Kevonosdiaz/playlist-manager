@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(PLAYLIST_MANAGER_BUILD_TESTS "Build the Qt Test unit tests" ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
+find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
 find_package(TagLib REQUIRED)
 
 set(CMAKE_AUTOUIC ON)
