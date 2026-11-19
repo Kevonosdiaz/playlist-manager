@@ -3,6 +3,7 @@
 
 #include "media/playlist.h"
 #include "media/playlistmodel.h"
+#include "media/playlisttagger.h"
 #include "media/songtablemodel.h"
 
 #include <QFileSystemModel>
@@ -46,15 +47,11 @@ private:
     PlaylistModel*    playlist_model;
     SongTableModel*   song_model;
     QFileSystemModel* fs_model;
+    PlaylistTagger*   playlist_tagger;
 
     QFutureWatcher<std::optional<Song>> tag_fwatcher;
     // Used to get diff for # of new songs added
     int prev_song_count = 0;
-
-    QFutureWatcher<Song> playlist_fwatcher;
-    // Values to handle open two playlists simultaneously
-    QPersistentModelIndex tagging_row;
-    QPersistentModelIndex next_row;
 
     // Track open dirs in song viewer (or dirs in append mode)
     QSet<QString>       open_dirs;
@@ -65,7 +62,6 @@ private:
     void setup_menu_action_connections();
     void setup_model_view_connections();
     void tag_list(QStringList paths);
-    void tag_playlist(const QModelIndex& idx);
     void select_playlist(const QModelIndex& idx);
     void remove_playlist(const QModelIndex& idx);
     void delete_playlist(const QModelIndex& idx);
