@@ -81,9 +81,7 @@ void MainWindow::open_playlist_file_selector()
     int find_res = playlist_model->find(filename);
     if(find_res != -1)
     {
-        const QModelIndex idx = playlist_model->index(find_res);
-        ui->playlistList->setFocus();
-        ui->playlistList->setCurrentIndex(idx);
+        select_playlist(playlist_model->index(find_res));
         return;
     }
 
@@ -119,9 +117,9 @@ void MainWindow::create_new_playlist()
     playlist_model->append(std::move(pl));
 
     // Set UI to select new idx & trigger playlist open
-    const QModelIndex idx = playlist_model->index(playlist_model->rowCount() - 1);
-    ui->playlistList->setFocus();
-    ui->playlistList->setCurrentIndex(idx);
+    auto idx = playlist_model->last();
+    if(idx.isValid())
+        select_playlist(idx);
 
     logger::dual_log(ui->statusbar, QString("Created playlist at %1").arg(filename));
 }
@@ -407,6 +405,12 @@ void MainWindow::tag_playlist(const QModelIndex& idx)
     logger::sb_log(ui->statusbar, QString(u"Loading playlist..."_s), LogLevel::Info, 0);
     tagging_row = idx;
     playlist_fwatcher.setFuture(playlist_model->at(tagging_row.row()).tag_all_songs());
+}
+
+void MainWindow::select_playlist(const QModelIndex& idx)
+{
+    ui->playlistList->setFocus();
+    ui->playlistList->setCurrentIndex(idx);
 }
 
 void MainWindow::remove_playlist(const QModelIndex& idx)

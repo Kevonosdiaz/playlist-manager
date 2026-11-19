@@ -23,6 +23,8 @@ public:
     bool     removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     void     append(Playlist pl);
     const Playlist& at(int row) const;
+    QModelIndex     first() const;
+    QModelIndex     last() const;
     int             find(const QString& path) const;
     void            set_songs(int row, QVector<Song> other_songs);
     void            save_playlists();

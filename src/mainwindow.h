@@ -66,6 +66,7 @@ private:
     void setup_model_view_connections();
     void tag_list(QStringList paths);
     void tag_playlist(const QModelIndex& idx);
+    void select_playlist(const QModelIndex& idx);
     void remove_playlist(const QModelIndex& idx);
     void delete_playlist(const QModelIndex& idx);
     void load_dir_to_songviewer(const QString& dirpath);

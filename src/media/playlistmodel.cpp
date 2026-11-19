@@ -54,6 +54,18 @@ const Playlist& PlaylistModel::at(int row) const
     return playlists.at(row);
 }
 
+// Return index to first playlist, or invalid index if empty
+QModelIndex PlaylistModel::first() const
+{
+    return rowCount() > 0 ? index(0) : QModelIndex();
+}
+
+// Return index to last playlist, or invalid index if empty
+QModelIndex PlaylistModel::last() const
+{
+    return rowCount() > 0 ? index(rowCount() - 1) : QModelIndex();
+}
+
 int PlaylistModel::find(const QString& path) const
 {
     for(int i = 0; i < playlists.size(); ++i)
