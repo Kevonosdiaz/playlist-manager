@@ -33,8 +33,8 @@ private:
         return Playlist(p);
     }
 
-    // Run the concurrent tagging step synchronously, the way MainWindow's watcher
-    // handler applies it: results() blocks until every song has been tagged
+    // Run the concurrent tagging step synchronously, the way PlaylistTagger
+    // applies it on finish: results() blocks until every song has been tagged
     static void tag(Playlist& pl) { pl.set_songs(pl.tag_all_songs().results()); }
 
     static QStringList paths(const Playlist& pl)
@@ -329,7 +329,7 @@ private slots:
 
     void tag_all_songs_preserves_order()
     {
-        // MainWindow hands results() straight to set_songs(), so index i must stay song i
+        // PlaylistTagger hands results() straight to set_songs(), so index i must stay song i
         // even though songs are tagged on different threads
         const int count = 16;
         QByteArray contents;

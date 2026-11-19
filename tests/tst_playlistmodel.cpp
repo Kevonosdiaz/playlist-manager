@@ -134,6 +134,36 @@ private slots:
         QCOMPARE(model.find(path(u"missing.m3u"_s)), -1);
     }
 
+    // --- first() / last() --------------------------------------------------------
+
+    void first_and_last_on_empty_are_invalid()
+    {
+        PlaylistModel model;
+        QVERIFY(!model.first().isValid());
+        QVERIFY(!model.last().isValid());
+    }
+
+    void first_and_last_single_row_coincide()
+    {
+        PlaylistModel model;
+        fill(model, {u"only"_s});
+        QCOMPARE(model.first(), model.index(0));
+        QCOMPARE(model.last(), model.index(0));
+    }
+
+    void first_and_last_track_changes()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s, u"c"_s});
+        QCOMPARE(model.first().data().toString(), u"a"_s);
+        QCOMPARE(model.last().data().toString(), u"c"_s);
+
+        QVERIFY(model.removeRow(2));
+        QCOMPARE(model.last().data().toString(), u"b"_s);
+        QVERIFY(model.removeRows(0, 2));
+        QVERIFY(!model.first().isValid());
+    }
+
     // --- removeRows -------------------------------------------------------------
 
     void remove_rows_data()
@@ -212,7 +242,7 @@ private slots:
         QCOMPARE(about.count(), 0);
     }
 
-    // MainWindow keeps tagging_row/next_row as persistent indexes and relies on
+    // PlaylistTagger keeps tagging_row/next_row as persistent indexes and relies on
     // them being invalidated (removed row) or shifted (rows after it)
     void remove_updates_persistent_indexes()
     {
