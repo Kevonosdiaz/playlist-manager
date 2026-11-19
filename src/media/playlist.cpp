@@ -116,8 +116,6 @@ void Playlist::parse_m3u()
                 QString remainder = line.sliced(comma_pos + 1);
 
                 // Attempt to split by Artist - Title, otherwise just Title
-                auto hyphen_pos = remainder.indexOf(" - ");
-                if(hyphen_pos != -1 && remainder.contains(u" - "_s))
                 const auto hyphen_pos = remainder.indexOf(" - ");
                 if(hyphen_pos != -1)
                 {
