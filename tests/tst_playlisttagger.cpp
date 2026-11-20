@@ -81,7 +81,8 @@ private:
         const QString wav = name + u".wav"_s;
         QVERIFY(testutils::write_silent_wav(path(wav), 1));
         QVERIFY(testutils::write_tags(path(wav), {.title = title}));
-        const QByteArray m3u = "#EXTM3U\n#EXTINF:1,M3U " + name.toUtf8() + "\n" + wav.toUtf8() + "\n";
+        const QByteArray m3u
+            = "#EXTM3U\n#EXTINF:1,M3U " + name.toUtf8() + "\n" + wav.toUtf8() + "\n";
         QVERIFY(testutils::write_file(path(name + u".m3u"_s), m3u));
         model.append(Playlist{path(name + u".m3u"_s)});
     }
@@ -145,7 +146,8 @@ private slots:
         QVERIFY(tagged.wait());
 
         QCOMPARE(tagged.count(), 1);
-        QCOMPARE(tagged.at(0).at(0).value<QPersistentModelIndex>(), QPersistentModelIndex{model.index(0)});
+        QCOMPARE(tagged.at(0).at(0).value<QPersistentModelIndex>(),
+                 QPersistentModelIndex{model.index(0)});
         QVERIFY(model.at(0).tagged());
         QCOMPARE(first_title(model, 0), u"Tag A"_s);
     }
@@ -218,8 +220,17 @@ private slots:
         gate.open();
         drain();
 
-        // TODO(human): assert the "latest selection wins" contract
-        QSKIP("Assertions not written yet");
+        // Verify A started, but not tagged (only M3U placeholder data)
+        QCOMPARE(started.count(), 2);
+        QVERIFY(!model.at(0).tagged());
+        QCOMPARE(first_title(model, 0), u"M3U a"_s);
+
+        QCOMPARE(tagged.count(), 1);
+        QVERIFY(model.at(1).tagged());
+        QCOMPARE(first_title(model, 1), u"Tag B"_s);
+
+        // Check playlist_tagged signal corresponds with B's index
+        QCOMPARE(tagged.at(0).at(0).value<QPersistentModelIndex>().row(), 1);
     }
 
     // A -> B -> back to A before anything finishes: B's queued request is dropped
