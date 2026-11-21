@@ -32,6 +32,8 @@ qt_add_library(playlist-manager-core STATIC
     src/media/playlisttagger.cpp
     src/media/dirscan.h
     src/media/dirscan.cpp
+    src/media/dirtagger.h
+    src/media/dirtagger.cpp
     src/utils/logger.h
     src/utils/logger.cpp
     src/utils/constants.h

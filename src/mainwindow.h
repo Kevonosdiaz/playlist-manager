@@ -1,19 +1,15 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "media/dirtagger.h"
 #include "media/playlist.h"
 #include "media/playlistmodel.h"
 #include "media/playlisttagger.h"
 #include "media/songtablemodel.h"
 
 #include <QFileSystemModel>
-#include <QFutureWatcher>
 #include <QItemSelection>
 #include <QMainWindow>
-#include <QQueue>
-#include <QStandardItemModel>
-
-#include <optional>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -48,14 +44,7 @@ private:
     SongTableModel*   song_model;
     QFileSystemModel* fs_model;
     PlaylistTagger*   playlist_tagger;
-
-    QFutureWatcher<std::optional<Song>> tag_fwatcher;
-    // Used to get diff for # of new songs added
-    int prev_song_count = 0;
-
-    // Track open dirs in song viewer (or dirs in append mode)
-    QSet<QString>       open_dirs;
-    QQueue<QStringList> pending_tag_scans;
+    DirTagger*        dir_tagger;
 
     void setup_models();
     void setup_views();

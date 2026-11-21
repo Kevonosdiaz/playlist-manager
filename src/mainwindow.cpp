@@ -1,26 +1,19 @@
 #include "mainwindow.h"
-#include "media/dirscan.h"
-#include "media/tag.h"
 #include "ui_mainwindow.h"
 #include "utils/constants.h"
 #include "utils/logger.h"
 #include "utils/settings.h"
 
-#include <QDirListing>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemModel>
-#include <QFutureWatcher>
 #include <QHeaderView>
 #include <QMenu>
 #include <QMessageBox>
-#include <QStandardItem>
-#include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTableView>
 #include <QTreeView>
-#include <QtConcurrentMap>
 
 #include <algorithm>
 #include <utility>
@@ -60,7 +53,6 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
-    tag_fwatcher.cancel();
     delete ui;
 }
 
@@ -90,6 +82,7 @@ void MainWindow::open_playlist_file_selector()
     ui->playlistList->setCurrentIndex(idx);
 }
 
+// TODO: Extract logic out of MainWindow into Playlist or PlaylistModel
 void MainWindow::create_new_playlist()
 {
     QFileDialog dialog(this, u"New Playlist File"_s, default_music_dir(), M3U_FILE_FILTER);
@@ -171,7 +164,7 @@ void MainWindow::toggle_recursive_directory_scan()
     ui->actionToggleRecursiveDirectoryScan->setChecked(new_val);
 
     if(!ui->actionToggleAppendDirectoryScan->isChecked())
-        open_dirs.clear();
+        dir_tagger->clear_open_dirs();
 }
 
 // Toggle setting to append song files to song viewer
@@ -184,7 +177,7 @@ void MainWindow::toggle_appending_directory_scan()
     // We should clear open dirs if append mode got turned off, so
     // a user can reopen a directory while clearing other open dirs
     if(!new_val)
-        open_dirs.clear();
+        dir_tagger->clear_open_dirs();
 }
 
 void MainWindow::on_playlist_selected(const QItemSelection& selected)
@@ -235,6 +228,7 @@ void MainWindow::setup_models()
 
     // Initialize song viewer QTableView headers
     song_model = new SongTableModel(this);
+    dir_tagger = new DirTagger(song_model, this);
 
     // Initialize file explorer to saved root, otherwise Music dir or home
     QSettings s;
@@ -315,42 +309,30 @@ void MainWindow::setup_model_view_connections()
 
     connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
 
-    // Hook up watcher to concurrent song tagging incoming results
-    connect(&tag_fwatcher,
-            &QFutureWatcher<std::optional<Song>>::resultsReadyAt,
-            this,
-            [this](int begin, int end) {
-                QVector<Song> batch;
-                for(int i = begin; i < end; i++)
-                {
-                    if(auto s = tag_fwatcher.resultAt(i))
-                        batch.push_back(std::move(*s));
-                }
-                song_model->add_songs(std::move(batch));
-            });
-    connect(&tag_fwatcher, &QFutureWatcher<std::optional<Song>>::finished, this, [this]() {
-        // Run next directory (if added with append mode)
-        if(!pending_tag_scans.empty())
-        {
-            logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
-            tag_list(pending_tag_scans.dequeue());
-            return;
-        }
-
-        if(tag_fwatcher.isCanceled())
-            return;
-
-        // Sort, resize cols, etc.
-        ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
-        fit_song_columns_to_contents();
-        auto curr_song_count = song_model->rowCount();
-        logger::sb_log(ui->statusbar,
-                       QString("Loaded %1 song(s)").arg(curr_song_count - prev_song_count),
-                       LogLevel::Info);
+    connect(dir_tagger, &DirTagger::started, this, [this]() {
+        logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
     });
+
+    connect(dir_tagger, &DirTagger::empty_dir, this, [this]() {
+        logger::dual_log(ui->statusbar, u"No files found in directory, skipping"_s, LogLevel::Info);
+    });
+
+    connect(dir_tagger, &DirTagger::repeat_dir, this, [this]() {
+        logger::dual_log(
+            ui->statusbar, u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
+    });
+
+    connect(dir_tagger, &DirTagger::clear_songviewer, this, &MainWindow::clear_songviewer);
 
     connect(playlist_tagger, &PlaylistTagger::started, this, [this]() {
         logger::sb_log(ui->statusbar, QString(u"Loading playlist..."_s), LogLevel::Info, 0);
+    });
+
+    connect(dir_tagger, &DirTagger::dir_tagged, this, [this](int song_count) {
+        // Sort, resize cols, etc.
+        ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
+        fit_song_columns_to_contents();
+        logger::sb_log(ui->statusbar, QString("Loaded %1 song(s)").arg(song_count), LogLevel::Info);
     });
 
     connect(playlist_tagger,
@@ -368,13 +350,6 @@ void MainWindow::setup_model_view_connections()
                                    QString("Loaded %1 song(s)").arg(playlist.size()),
                                    LogLevel::Info);
             });
-}
-
-// Concurrently tag song at each path in paths
-void MainWindow::tag_list(QStringList paths)
-{
-    // Connected slot will add scanned songs to song_model
-    tag_fwatcher.setFuture(QtConcurrent::mapped(std::move(paths), path_to_song));
 }
 
 void MainWindow::select_playlist(const QModelIndex& idx)
@@ -410,79 +385,34 @@ void MainWindow::delete_playlist(const QModelIndex& idx)
 // Scan song files into Song structs and load into SongTableModel
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
-    QSettings s;
-    bool      recursive_mode = Settings::get_recursive_mode();
-    bool      append_mode    = Settings::get_append_mode();
-
     // Clear any open playlist selection since a directory is opened
     ui->playlistList->selectionModel()->clear();
-
-    // If recursive mode is on, add flag to scan subdirs for songs
-    using F                               = QDirListing::IteratorFlag;
-    QDirListing::IteratorFlags iter_flags = F::ExcludeOther;
-    if(recursive_mode)
-        iter_flags |= F::Recursive;
-
-    QDirListing dir(dirpath, VALID_FILETYPES, iter_flags);
-
-    // Exit if empty
-    if(dir.begin() == dir.end())
-    {
-        logger::dual_log(ui->statusbar, u"No files found in directory, skipping"_s, LogLevel::Info);
-        return;
-    }
-
-    // Skip reopening if already opened/scanned dir
-    // Note: does not prevent recursive scan from finding repeats; open_dirs handles those
-    if(open_dirs.contains(dirpath + "/"))
-    {
-        logger::dual_log(
-            ui->statusbar, u"Attempted to reopen same directory, skipping"_s, LogLevel::Info);
-        return;
-    }
-
-    // If not in append mode we only consider one directory open at a time, so clear old paths from in-progress scans/open_dirs
-    // Also clear is open_dirs.empty() to catch playlist -> dir transition in append mode
-    if(!append_mode || open_dirs.empty())
-    {
-        pending_tag_scans.clear();
-        tag_fwatcher.cancel();
-        open_dirs.clear();
-        clear_songviewer();
-    }
 
     // Cancel pending work for opening a playlist earlier
     playlist_tagger->cancel();
 
-    // Extract song metadata using TagLib before replacing/appending to table
-    QStringList song_paths = scan_dir(dir, open_dirs);
-    open_dirs.insert(dirpath + "/");
+    bool recursive_mode = Settings::get_recursive_mode();
+    bool append_mode    = Settings::get_append_mode();
 
-    // Enqueue current dir if another dir is currently being tagged, else tag immediately
-    if(append_mode && tag_fwatcher.isRunning())
-        pending_tag_scans.enqueue(std::move(song_paths));
-    else
+    bool res = dir_tagger->request_dir(dirpath, recursive_mode, append_mode);
+
+    // Display text if directory is being tagged
+    if(res)
     {
-        logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
-        prev_song_count = song_model->rowCount();
-        tag_list(std::move(song_paths));
+        QFileInfo     fi(dirpath);
+        const QString text = ui->songViewerLabel->text();
+        if(text.isEmpty())
+            ui->songViewerLabel->setText(fi.fileName());
+        else
+            ui->songViewerLabel->setText(text + u", "_s + fi.fileName());
     }
-
-    QFileInfo     fi(dirpath);
-    const QString text = ui->songViewerLabel->text();
-    if(text.isEmpty())
-        ui->songViewerLabel->setText(fi.fileName());
-    else
-        ui->songViewerLabel->setText(text + u", "_s + fi.fileName());
 }
 
 // Pass along Songs in Playlist to load into SongTableModel
 void MainWindow::load_playlist_to_songviewer(const Playlist& pl)
 {
     ui->fileExplorer->selectionModel()->clear();
-    pending_tag_scans.clear();
-    tag_fwatcher.cancel();
-    open_dirs.clear();
+    dir_tagger->cancel();
 
     song_model->set_songs(pl.get_songs());
     ui->songViewer->sortByColumn(SongTableModel::Title, Qt::AscendingOrder);
