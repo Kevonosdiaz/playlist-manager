@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmake -B build*)",
+      "Bash(cmake --build build*)",
+      "Bash(ctest --test-dir build*)",
+      "Bash(./build/tests/tst_*)",
+      "Bash(clang-format --dry-run *)",
+      "Bash(git branch*)", 
+      "Bash(git check-ignore*)", 
+      "Bash(git blame*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(ls *)"
+    ]
+  }
+}
