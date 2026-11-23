@@ -1,8 +1,9 @@
 #ifndef SONG_H
 #define SONG_H
 
-#include <QPixmap>
+#include <QImage>
 #include <QString>
+#include <cstdint>
 
 struct Song
 {
