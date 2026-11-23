@@ -38,16 +38,16 @@ MainWindow::MainWindow(QWidget* parent)
     // Set default splitter sizes for left/right sides
     ui->mainSplitter->setSizes({350, 814});
 
+    // Restore state from QSettings
+    restore_window_settings();
+    restore_menubar_settings();
+
     setup_models();
     setup_views();
 
     // Handle signal-slot connections
     setup_menu_action_connections();
     setup_model_view_connections();
-
-    // Restore state from QSettings
-    restore_window_settings();
-    restore_menubar_settings();
     playlist_model->restore_playlists();
 }
 
@@ -157,26 +157,21 @@ void MainWindow::set_file_explorer_root()
 }
 
 // Toggle setting to cause QDirListing to scan directories recursively for song files
-void MainWindow::toggle_recursive_directory_scan()
+void MainWindow::toggle_recursive_directory_scan(bool on)
 {
-    bool new_val = !Settings::get_recursive_mode();
-    Settings::set_recursive_mode(new_val);
-    ui->actionToggleRecursiveDirectoryScan->setChecked(new_val);
-
+    Settings::set_recursive_mode(on);
     if(!ui->actionToggleAppendDirectoryScan->isChecked())
         dir_tagger->clear_open_dirs();
 }
 
 // Toggle setting to append song files to song viewer
-void MainWindow::toggle_appending_directory_scan()
+void MainWindow::toggle_appending_directory_scan(bool on)
 {
-    bool new_val = !Settings::get_append_mode();
-    Settings::set_append_mode(new_val);
-    ui->actionToggleAppendDirectoryScan->setChecked(new_val);
+    Settings::set_append_mode(on);
 
     // We should clear open dirs if append mode got turned off, so
     // a user can reopen a directory while clearing other open dirs
-    if(!new_val)
+    if(!on)
         dir_tagger->clear_open_dirs();
 }
 
@@ -286,11 +281,11 @@ void MainWindow::setup_menu_action_connections()
             this,
             &MainWindow::set_file_explorer_root);
     connect(ui->actionToggleRecursiveDirectoryScan,
-            &QAction::triggered,
+            &QAction::toggled,
             this,
             &MainWindow::toggle_recursive_directory_scan);
     connect(ui->actionToggleAppendDirectoryScan,
-            &QAction::triggered,
+            &QAction::toggled,
             this,
             &MainWindow::toggle_appending_directory_scan);
     connect(ui->actionCreatePlaylist, &QAction::triggered, this, &MainWindow::create_new_playlist);
