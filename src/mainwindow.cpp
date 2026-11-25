@@ -79,7 +79,7 @@ void MainWindow::open_playlist_file_selector()
     // Create a new Playlist which will be tagged
     playlist_model->append(Playlist{filename});
     auto idx = playlist_model->index(playlist_model->rowCount() - 1);
-    ui->playlistList->setCurrentIndex(idx);
+    select_playlist(idx);
 }
 
 // TODO: Extract logic out of MainWindow into Playlist or PlaylistModel
@@ -175,13 +175,13 @@ void MainWindow::toggle_appending_directory_scan(bool on)
         dir_tagger->clear_open_dirs();
 }
 
-void MainWindow::on_playlist_selected(const QItemSelection& selected)
+void MainWindow::open_playlist(const QModelIndex& idx)
 {
-    if(selected.empty())
+    if(!idx.isValid())
         return;
-    const QModelIndex curr = selected.indexes().front();
-    const Playlist&   pl   = playlist_model->at(curr.row());
-    playlist_tagger->request_playlist(curr);
+    const Playlist& pl = playlist_model->at(idx.row());
+    open_playlist_idx  = idx;
+    playlist_tagger->request_playlist(idx);
     // Either shows fully tagged, or bare playlist info from M3U (temporarily)
     load_playlist_to_songviewer(pl);
 }
@@ -261,6 +261,7 @@ void MainWindow::setup_views()
     // Setup file explorer (QTreeView)
     ui->fileExplorer->setModel(fs_model);
     ui->fileExplorer->setRootIndex(fs_model->index(fs_model->rootPath()));
+    ui->fileExplorer->setExpandsOnDoubleClick(false);
 
     // Hide header and hide all columns except filename column
     ui->fileExplorer->setHeaderHidden(true);
@@ -294,15 +295,16 @@ void MainWindow::setup_menu_action_connections()
 void MainWindow::setup_model_view_connections()
 {
     connect(ui->playlistList->selectionModel(),
-            &QItemSelectionModel::selectionChanged,
+            &QItemSelectionModel::currentChanged,
             this,
-            &MainWindow::on_playlist_selected);
+            &MainWindow::open_playlist);
     connect(ui->playlistList,
             &QWidget::customContextMenuRequested,
             this,
             &MainWindow::show_playlist_ctx_menu);
 
-    connect(ui->fileExplorer, &QTreeView::clicked, this, &MainWindow::open_explorer_dir);
+    connect(
+        ui->fileExplorer, &QAbstractItemView::doubleClicked, this, &MainWindow::open_explorer_dir);
 
     connect(dir_tagger, &DirTagger::started, this, [this]() {
         logger::sb_log(ui->statusbar, QString(u"Loading directory..."_s), LogLevel::Info, 0);
@@ -335,7 +337,7 @@ void MainWindow::setup_model_view_connections()
             this,
             [this](const QPersistentModelIndex& idx) {
                 const auto& playlist = playlist_model->at(idx.row());
-                if(ui->playlistList->selectionModel()->isSelected(idx))
+                if(idx == open_playlist_idx)
                     load_playlist_to_songviewer(playlist);
 
                 if(playlist.empty())
@@ -351,12 +353,13 @@ void MainWindow::select_playlist(const QModelIndex& idx)
 {
     ui->playlistList->setFocus();
     ui->playlistList->setCurrentIndex(idx);
+    open_playlist(idx);
 }
 
 void MainWindow::remove_playlist(const QModelIndex& idx)
 {
     // Clear open playlist from song viewer if it is being removed
-    if(ui->playlistList->selectionModel()->isSelected(idx))
+    if(idx == open_playlist_idx)
         clear_songviewer();
     bool res = playlist_model->removeRows(idx.row(), 1);
     if(!res)
@@ -380,8 +383,8 @@ void MainWindow::delete_playlist(const QModelIndex& idx)
 // Scan song files into Song structs and load into SongTableModel
 void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
-    // Clear any open playlist selection since a directory is opened
-    ui->playlistList->selectionModel()->clear();
+    // Clear any open playlist
+    open_playlist_idx = QModelIndex();
 
     // Cancel pending work for opening a playlist earlier
     playlist_tagger->cancel();

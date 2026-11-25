@@ -10,6 +10,7 @@
 #include <QFileSystemModel>
 #include <QItemSelection>
 #include <QMainWindow>
+#include <QPersistentModelIndex>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -35,7 +36,7 @@ private slots:
     void set_file_explorer_root();
     void toggle_recursive_directory_scan(bool on);
     void toggle_appending_directory_scan(bool on);
-    void on_playlist_selected(const QItemSelection& selected);
+    void open_playlist(const QModelIndex& idx);
     void show_playlist_ctx_menu(const QPoint& pos);
 
 private:
@@ -45,6 +46,8 @@ private:
     QFileSystemModel* fs_model;
     PlaylistTagger*   playlist_tagger;
     DirTagger*        dir_tagger;
+
+    QPersistentModelIndex open_playlist_idx;
 
     void setup_models();
     void setup_views();
