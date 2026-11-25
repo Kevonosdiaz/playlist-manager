@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(PLAYLIST_MANAGER_BUILD_TESTS "Build the Qt Test unit tests" ON)
 
-find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
+find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Concurrent Svg)
 find_package(TagLib REQUIRED)
 
 set(CMAKE_AUTOUIC ON)
@@ -16,8 +16,17 @@ qt_standard_project_setup()
 set(PLAYLIST_MANAGER_WARNING_FLAGS
     -Wall -Wextra -Werror -Wconversion -Wshadow -Wpedantic -Wno-missing-field-initializers)
 
+# Icon assets
+qt_add_resources(playlist-manager-core "assets"
+    PREFIX "/icons"
+    BASE "assets"
+    FILES
+        assets/pencil-svgrepo-com.svg
+        assets/pencil-svgrepo-com-filled.svg
+)
+
 # Non-UI logic (parsing, tagging, models) lives in a static library so the
-# application and the unit tests link the same compiled code.
+# application and the unit tests link the same compiled code
 qt_add_library(playlist-manager-core STATIC
     src/media/tag.h
     src/media/tag.cpp
@@ -49,6 +58,7 @@ target_link_libraries(playlist-manager-core
         Qt::Gui
         Qt::Widgets
         Qt::Concurrent
+        Qt::Svg
         TagLib::tag
 )
 target_compile_options(playlist-manager-core PRIVATE ${PLAYLIST_MANAGER_WARNING_FLAGS})
