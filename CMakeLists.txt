@@ -16,15 +16,6 @@ qt_standard_project_setup()
 set(PLAYLIST_MANAGER_WARNING_FLAGS
     -Wall -Wextra -Werror -Wconversion -Wshadow -Wpedantic -Wno-missing-field-initializers)
 
-# Icon assets
-qt_add_resources(playlist-manager-core "assets"
-    PREFIX "/icons"
-    BASE "assets"
-    FILES
-        assets/pencil-svgrepo-com.svg
-        assets/pencil-svgrepo-com-filled.svg
-)
-
 # Non-UI logic (parsing, tagging, models) lives in a static library so the
 # application and the unit tests link the same compiled code
 qt_add_library(playlist-manager-core STATIC
@@ -51,6 +42,16 @@ qt_add_library(playlist-manager-core STATIC
     src/utils/tooltiplabel.h
     src/utils/tooltiplabel.cpp
 )
+
+# Icon assets
+qt_add_resources(playlist-manager-core "assets"
+    PREFIX "/icons"
+    BASE "assets"
+    FILES
+        assets/pencil-svgrepo-com.svg
+        assets/pencil-svgrepo-com-filled.svg
+)
+
 target_include_directories(playlist-manager-core PUBLIC src)
 target_link_libraries(playlist-manager-core
     PUBLIC
