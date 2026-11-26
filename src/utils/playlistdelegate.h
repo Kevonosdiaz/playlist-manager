@@ -14,7 +14,7 @@ public:
     bool  editorEvent(QEvent*                     event,
                       QAbstractItemModel*         model,
                       const QStyleOptionViewItem& option,
-                      const QModelIndex&          index) override;
+                      const QModelIndex&          idx) override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& idx) const override;
 
 protected:

@@ -3,7 +3,6 @@
 
 #include <QApplication>
 #include <QMouseEvent>
-#include <QPainter>
 
 namespace
 {
@@ -29,7 +28,7 @@ bool PlaylistDelegate::editorEvent(QEvent*                     event,
     if(etype != QEvent::MouseButtonPress && etype != QEvent::MouseButtonRelease
        && etype != QEvent::MouseButtonDblClick)
         return QStyledItemDelegate::editorEvent(event, model, option, idx);
-    QMouseEvent* me = static_cast<QMouseEvent*>(event);
+    const QMouseEvent* me = static_cast<QMouseEvent*>(event);
 
     // NOTE: Returning true here swallows right click to avoid playlist load
     if(me->button() == Qt::RightButton)
@@ -40,17 +39,17 @@ bool PlaylistDelegate::editorEvent(QEvent*                     event,
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, idx);
     // Determine where in the row the icon is drawn
-    const QWidget* w     = opt.widget;
-    const QStyle*  style = w ? w->style() : QApplication::style();
-    const QRect    rect  = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &opt, w);
-    if(!rect.contains(me->position().toPoint()))
+    const QWidget* w         = opt.widget;
+    const QStyle*  style     = w ? w->style() : QApplication::style();
+    const QRect    icon_rect = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &opt, w);
+    if(!icon_rect.contains(me->position().toPoint()))
         return QStyledItemDelegate::editorEvent(event, model, option, idx);
 
     // Toggle edit mode of this playlist row (@ idx) since click release was on icon
     // PlaylistModel::setData should handle interaction with existing playlist being edited, and repainting edit icons as appropriate
     if(etype == QEvent::MouseButtonRelease)
     {
-        bool old_val = idx.data(PlaylistModel::IsEditTargetRole).toBool();
+        const bool old_val = idx.data(PlaylistModel::IsEditTargetRole).toBool();
         model->setData(idx, !old_val, PlaylistModel::IsEditTargetRole);
     }
     return true;
