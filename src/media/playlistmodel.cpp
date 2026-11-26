@@ -25,9 +25,32 @@ QVariant PlaylistModel::data(const QModelIndex& idx, int role) const
         return pl.get_path();
     case Qt::DisplayRole:
         return pl.get_name();
+    case Role::IsEditTargetRole:
+        return edit_target == idx;
     }
 
     return QVariant{};
+}
+
+// Override setData to implement logic for playlist being edited
+bool PlaylistModel::setData(const QModelIndex& idx, const QVariant& val, int role)
+{
+    if(role != Role::IsEditTargetRole || !idx.isValid())
+        return false;
+    const auto old_target = edit_target;
+
+    if(val.toBool())
+        edit_target = idx;
+    else if(idx == edit_target)
+        edit_target = QModelIndex();
+    else
+        return false;
+
+    // Handle repainting of edit icon(s)
+    if(old_target.isValid() && old_target != edit_target)
+        emit dataChanged(old_target, old_target, {IsEditTargetRole});
+    emit dataChanged(idx, idx, {IsEditTargetRole});
+    return true;
 }
 
 bool PlaylistModel::removeRows(int row, int count, const QModelIndex& parent)

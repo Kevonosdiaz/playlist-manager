@@ -14,12 +14,14 @@ class PlaylistModel : public QAbstractListModel
 public:
     enum Role
     {
-        PathRole = Qt::UserRole + 1
+        PathRole         = Qt::UserRole + 1,
+        IsEditTargetRole = Qt::UserRole + 2
     };
     explicit PlaylistModel(QObject* parent = nullptr);
 
     int      rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& idx, int role = Qt::DisplayRole) const override;
+    bool     setData(const QModelIndex& idx, const QVariant& val, int role = Qt::EditRole) override;
     bool     removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     void     append(Playlist pl);
     const Playlist& at(int row) const;
@@ -31,7 +33,8 @@ public:
     void            restore_playlists();
 
 private:
-    QList<Playlist> playlists;
+    QList<Playlist>       playlists;
+    QPersistentModelIndex edit_target;
 };
 
 #endif /* PLAYLISTMODEL_H */
