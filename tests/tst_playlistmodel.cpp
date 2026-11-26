@@ -1,5 +1,5 @@
 // Tests for PlaylistModel (src/media/playlistmodel.cpp): list model contract, row
-// removal and QSettings persistence.
+// removal, the single edit target (IsEditTargetRole) and QSettings persistence.
 
 #include "media/playlistmodel.h"
 #include "utils/settings.h"
@@ -76,6 +76,10 @@ private slots:
         QAbstractItemModelTester tester(&model,
                                         QAbstractItemModelTester::FailureReportingMode::QtTest);
         fill(model, {u"a"_s, u"b"_s, u"c"_s});
+        model.setData(model.index(0), true, PlaylistModel::IsEditTargetRole);
+        model.setData(model.index(2), true, PlaylistModel::IsEditTargetRole);
+        model.setData(model.index(2), false, PlaylistModel::IsEditTargetRole);
+        model.setData(model.index(1), true, PlaylistModel::IsEditTargetRole);
         model.removeRows(1, 1);
         model.removeRows(0, 2);
     }
@@ -255,6 +259,171 @@ private slots:
         QVERIFY(!removed_idx.isValid());
         QCOMPARE(shifted_idx.row(), 1);
         QCOMPARE(shifted_idx.data().toString(), u"c"_s);
+    }
+
+    // --- Edit target (IsEditTargetRole) -------------------------------------------
+
+    static bool set_target(PlaylistModel& model, int row, bool val)
+    {
+        return model.setData(model.index(row), val, PlaylistModel::IsEditTargetRole);
+    }
+
+    static QList<bool> edit_flags(const PlaylistModel& model)
+    {
+        QList<bool> res;
+        for(int i = 0; i < model.rowCount(); ++i)
+            res << model.data(model.index(i), PlaylistModel::IsEditTargetRole).toBool();
+        return res;
+    }
+
+    // First row of each dataChanged emission, in emission order
+    static QList<int> changed_rows(const QSignalSpy& spy)
+    {
+        QList<int> res;
+        for(const QList<QVariant>& args : spy)
+            res << args.at(0).value<QModelIndex>().row();
+        return res;
+    }
+
+    void no_edit_target_by_default()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s});
+        QCOMPARE(edit_flags(model), (QList<bool>{false, false}));
+    }
+
+    void set_edit_target()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s, u"c"_s});
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(set_target(model, 1, true));
+        QCOMPARE(edit_flags(model), (QList<bool>{false, true, false}));
+
+        // Scoped to one row and one role, so the view only repaints that icon
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.at(0).at(0).value<QModelIndex>(), model.index(1));
+        QCOMPARE(spy.at(0).at(1).value<QModelIndex>(), model.index(1));
+        QCOMPARE(spy.at(0).at(2).value<QList<int>>(), QList<int>{PlaylistModel::IsEditTargetRole});
+    }
+
+    // Only one playlist is edited at a time, so the previous target's icon must
+    // also be told to repaint
+    void new_edit_target_replaces_previous()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s, u"c"_s});
+        QVERIFY(set_target(model, 0, true));
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(set_target(model, 2, true));
+        QCOMPARE(edit_flags(model), (QList<bool>{false, false, true}));
+        QCOMPARE(changed_rows(spy), (QList<int>{0, 2}));
+    }
+
+    // Re-targeting the current target is a no-op change; it shouldn't announce the
+    // same row twice
+    void reselecting_edit_target_emits_once()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s});
+        QVERIFY(set_target(model, 0, true));
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(set_target(model, 0, true));
+        QCOMPARE(edit_flags(model), (QList<bool>{true, false}));
+        QCOMPARE(changed_rows(spy), QList<int>{0});
+    }
+
+    void clear_edit_target()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s});
+        QVERIFY(set_target(model, 1, true));
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(set_target(model, 1, false));
+        QCOMPARE(edit_flags(model), (QList<bool>{false, false}));
+        QCOMPARE(changed_rows(spy), QList<int>{1});
+    }
+
+    // Clearing a row that isn't the target must leave the real target alone
+    void clearing_non_target_is_rejected()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s});
+        QVERIFY(set_target(model, 0, true));
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(!set_target(model, 1, false));
+        QCOMPARE(edit_flags(model), (QList<bool>{true, false}));
+        QCOMPARE(spy.count(), 0);
+    }
+
+    // Names and paths come from the playlist file; only the edit flag is writable
+    void set_data_rejects_other_roles_data()
+    {
+        QTest::addColumn<int>("role");
+
+        QTest::newRow("EditRole") << int(Qt::EditRole);
+        QTest::newRow("DisplayRole") << int(Qt::DisplayRole);
+        QTest::newRow("PathRole") << int(PlaylistModel::PathRole);
+    }
+
+    void set_data_rejects_other_roles()
+    {
+        QFETCH(int, role);
+
+        PlaylistModel model;
+        fill(model, {u"a"_s});
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(!model.setData(model.index(0), u"renamed"_s, role));
+        QVERIFY(!model.setData(model.index(0), true, role));
+        QCOMPARE(names(model), QStringList{u"a"_s});
+        QCOMPARE(edit_flags(model), QList<bool>{false});
+        QCOMPARE(spy.count(), 0);
+    }
+
+    void set_data_rejects_invalid_index()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s});
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+
+        QVERIFY(!model.setData(QModelIndex{}, true, PlaylistModel::IsEditTargetRole));
+        QCOMPARE(edit_flags(model), QList<bool>{false});
+        QCOMPARE(spy.count(), 0);
+    }
+
+    // The target is held as a QPersistentModelIndex, so it must stay on the same
+    // playlist when rows above it are removed
+    void edit_target_follows_its_row()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s, u"c"_s});
+        QVERIFY(set_target(model, 2, true));
+
+        QVERIFY(model.removeRows(0, 1));
+        QCOMPARE(edit_flags(model), (QList<bool>{false, true}));
+        QCOMPARE(model.data(model.index(1)).toString(), u"c"_s);
+    }
+
+    // Removing the edited playlist drops the target, and the next setData must not
+    // emit dataChanged for the stale (now invalid) index
+    void removing_edit_target_clears_it()
+    {
+        PlaylistModel model;
+        fill(model, {u"a"_s, u"b"_s, u"c"_s});
+        QVERIFY(set_target(model, 1, true));
+
+        QVERIFY(model.removeRows(1, 1));
+        QCOMPARE(edit_flags(model), (QList<bool>{false, false}));
+
+        QSignalSpy spy(&model, &QAbstractItemModel::dataChanged);
+        QVERIFY(set_target(model, 0, true));
+        QCOMPARE(changed_rows(spy), QList<int>{0});
     }
 
     // --- Persistence ------------------------------------------------------------
