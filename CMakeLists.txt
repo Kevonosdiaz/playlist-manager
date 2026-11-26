@@ -41,6 +41,8 @@ qt_add_library(playlist-manager-core STATIC
     src/utils/settings.cpp
     src/utils/tooltiplabel.h
     src/utils/tooltiplabel.cpp
+    src/utils/playlistdelegate.h
+    src/utils/playlistdelegate.cpp
 )
 
 # Icon assets

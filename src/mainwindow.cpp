@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "utils/constants.h"
 #include "utils/logger.h"
+#include "utils/playlistdelegate.h"
 #include "utils/settings.h"
 
 #include <QFile>
@@ -239,6 +240,8 @@ void MainWindow::setup_views()
     // Setup playlist viewer (QListView)
     ui->playlistList->setModel(playlist_model);
     ui->playlistList->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    // Use QStyledItemDelegate subclass for drawing edit icons
+    ui->playlistList->setItemDelegate(new PlaylistDelegate(ui->playlistList));
 
     // Setup song viewer (QTableView)
     ui->songViewer->setIconSize(QSize(ART_SIZE, ART_SIZE));
