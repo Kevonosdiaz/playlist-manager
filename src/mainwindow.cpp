@@ -295,9 +295,12 @@ void MainWindow::setup_menu_action_connections()
 void MainWindow::setup_model_view_connections()
 {
     connect(ui->playlistList->selectionModel(),
-            &QItemSelectionModel::currentChanged,
+            &QItemSelectionModel::selectionChanged,
             this,
-            &MainWindow::open_playlist);
+            [this](const QItemSelection& selected) {
+                if(!selected.isEmpty())
+                    open_playlist(selected.indexes().constFirst());
+            });
     connect(ui->playlistList,
             &QWidget::customContextMenuRequested,
             this,
@@ -385,6 +388,7 @@ void MainWindow::load_dir_to_songviewer(const QString& dirpath)
 {
     // Clear any open playlist
     open_playlist_idx = QModelIndex();
+    ui->playlistList->selectionModel()->clear();
 
     // Cancel pending work for opening a playlist earlier
     playlist_tagger->cancel();
