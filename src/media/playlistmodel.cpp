@@ -47,7 +47,7 @@ bool PlaylistModel::setData(const QModelIndex& idx, const QVariant& val, int rol
         return false;
 
     // Handle repainting of edit icon(s)
-    if(old_target.isValid() && old_target != edit_target)
+    if(old_target.isValid() && old_target != idx)
         emit dataChanged(old_target, old_target, {IsEditTargetRole});
     emit dataChanged(idx, idx, {IsEditTargetRole});
     return true;
