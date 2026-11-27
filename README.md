@@ -8,5 +8,6 @@ WIP C++/Qt6 GUI application to browse local music collections and manage M3U8 pl
 git clone https://github.com/Kevonosdiaz/playlist-manager.git
 cd playlist-manager
 cmake -B build
+cmake --build build
 ./build/playlist-manager
 ```
